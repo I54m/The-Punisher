@@ -1,8 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.bungeeMain;
-import me.fiftyfour.punisher.bungee.fetchers.NameFetcher;
-import me.fiftyfour.punisher.bungee.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.fetchers.NameFetcher;
+import me.fiftyfour.punisher.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.systems.Permissions;
+import me.fiftyfour.punisher.systems.ReputationSystem;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -14,10 +17,9 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 
 public class BanCommand extends Command {
-    private bungeeMain plugin = bungeeMain.getInstance();
+    private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
     private long length;
 
@@ -33,7 +35,7 @@ public class BanCommand extends Command {
         }
         ProxiedPlayer player = (ProxiedPlayer) commandSender;
         if (strings.length == 0) {
-            player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|y>] [reason]").color(ChatColor.WHITE).create());
+            player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
         String targetuuid = UUIDFetcher.getUUID(strings[0]);
@@ -63,12 +65,14 @@ public class BanCommand extends Command {
                 stmt3.executeUpdate();
             }
         }catch (SQLException e){
-            e.printStackTrace();
+            plugin.mysqlfail(e);
+            if (plugin.testConnectionManual())
+                this.execute(commandSender, strings);
             return;
         }
         boolean duration;
         try {
-            if (strings.length == 1 || strings[1].toLowerCase().endsWith("y")) {
+            if (strings.length == 1 || strings[1].toLowerCase().endsWith("perm")) {
                 length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
                 duration = true;
             } else if (strings[1].endsWith("M")) {
@@ -94,7 +98,7 @@ public class BanCommand extends Command {
             }
         }catch(NumberFormatException e){
             player.sendMessage(new ComponentBuilder(prefix).append(strings[1] + " is not a valid duration!").color(ChatColor.RED).create());
-            player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|y>] [reason]").color(ChatColor.WHITE).create());
+            player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
         StringBuilder reason = new StringBuilder();
@@ -110,41 +114,36 @@ public class BanCommand extends Command {
         }else {
             reason.append("Manually Banned");
         }
+        String reasonString = reason.toString().replace("\"", "'");
         try {
             String sql = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
-            if (!results.next()) {
+            if (results.next()) {
                 int Punishmentno = results.getInt("Manual Punishments");
                 Punishmentno++;
-                String sql1 =  "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + ";";
-                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                stmt1.executeUpdate();
-            }else {
-                int Punishmentno = results.getInt("Manual Punishments");
-                Punishmentno++;
-                String sql1 = "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + ";";
+                String sql1 = "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + " WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
             }
             String sql2 = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results1 = stmt2.executeQuery();
-            if (!results1.next()) {
+            if (results1.next()) {
                 int Punishmentno1 = results1.getInt("Manual Punishments");
                 Punishmentno1++;
-                String sql3 = "UPDATE `history` SET `Manual Punishments`=" + Punishmentno1 + ";";
-                PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
-                stmt3.executeUpdate();
-            }else{
-                int Punishmentno1 = results1.getInt("Manual Punishments");
-                Punishmentno1++;
-                String sql3 = "UPDATE `history` SET `Manual Punishments`=" + Punishmentno1 + ";";
+                String sql3 = "UPDATE `history` SET `Manual Punishments`='" + Punishmentno1 + "' WHERE `UUID`='" + targetuuid + "' ;";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
             }
         }catch (SQLException e){
-            e.printStackTrace();
+            plugin.mysqlfail(e);
+            if (plugin.testConnectionManual())
+                this.execute(commandSender, strings);
+            return;
+        }
+        if (!Permissions.higher(player, targetname)){
+            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
             return;
         }
         try {
@@ -152,71 +151,48 @@ public class BanCommand extends Command {
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
             if (!results.next()) {
-                String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`) VALUES ('"+ targetuuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "');";
+                String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('"+ targetuuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', \"" + reasonString + "\", '" + player.getName() + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
             }else{
-                String sql1 = "UPDATE `bans` SET (`UUID`, `Name`, `Length`, `Reason`) VALUES ('"+ targetuuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "');";
+                String sql1 = "UPDATE `bans` SET `UUID`='" + targetuuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`=\"" + reasonString + "\", `Punisher`='" + player.getName() + "' WHERE `UUID`='" + targetuuid + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
             }
         }catch (SQLException e){
-            e.printStackTrace();
+            plugin.mysqlfail(e);
+            if (plugin.testConnectionManual())
+                this.execute(commandSender, strings);
             return;
         }
         ProxiedPlayer target = ProxyServer.getInstance().getPlayer(targetname);
-        Long bantime;
-        try{
-            String sql = "SELECT * FROM `bans` WHERE UUID='" + targetuuid + "'";
-            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
-            ResultSet results = stmt.executeQuery();
-            if (!results.next()) {
-                bantime = results.getLong("Length");
-            }else{
-                bantime = results.getLong("Length");
-            }
-        }catch (SQLException e){
-            e.printStackTrace();
-            return;
-        }
-        Long banleftmillis = bantime - System.currentTimeMillis();
-        long daysleft = banleftmillis / (1000 * 60 * 60 * 24);
+
+        Long banleftmillis = length;
+        long daysleft =  banleftmillis / (1000 * 60 * 60 * 24);
         long hoursleft = (long) Math.floor(banleftmillis / (1000 * 60 * 60) % 24);
         long minutesleft = (long) Math.floor(banleftmillis / (1000 * 60) % 60);
         long secondsleft = (long) Math.floor(banleftmillis / 1000 % 60);
         if (target != null) {
-            if (daysleft > 365) {
-                target.disconnect(new TextComponent(ChatColor.RED + "You have been Banned from the server!" + "\n"
-                        + "You were Banned for the reason: " + reason.toString() + "\n"
-                        + "This ban does not expire!" + "\n"
-                        + "You have done something against our server rules!" + "\n"
-                        + "Some of our punishments result in a ban with no warning!"
-                ));
+            if (daysleft > 500) {
+                String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
+                        .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                        .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
+
+                target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
             } else {
-                target.disconnect(new TextComponent(ChatColor.RED + "You have been Banned from the server!" + "\n"
-                        + "You were Banned for the reason: " + reason.toString() + "\n"
-                        + "This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s" + "\n"
-                        + "You have done something against our server rules!" + "\n"//todo make it so that this message is configurable
-                        + "Some of our punishments result in a ban with no warning!"
-                ));
+                String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
+                        .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                        .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
+
+                target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
             }
         }
-        for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
-            if (all.hasPermission("punisher.staffchat")) {
-                all.sendMessage(new ComponentBuilder("[").color(ChatColor.GRAY).append("Staff Chat").color(ChatColor.RED).bold(true).append("]").color(ChatColor.GRAY).bold(false)
-                        .append(" ").color(ChatColor.RESET).append("[").color(ChatColor.GRAY).bold(false).append(player.getServer().getInfo().getName()).color(ChatColor.RED).bold(true)
-                        .append("] ").color(ChatColor.GRAY).bold(false).append(player.getName() + " Banned: " + targetname + " for: " + reason.toString()).color(ChatColor.RED).bold(false).create());
-                if (daysleft > 365)
-                    all.sendMessage(new ComponentBuilder("[").color(ChatColor.GRAY).append("Staff Chat").color(ChatColor.RED).bold(true).append("]").color(ChatColor.GRAY).bold(false)
-                        .append(" ").color(ChatColor.RESET).append("[").color(ChatColor.GRAY).bold(false).append(player.getServer().getInfo().getName()).color(ChatColor.RED).bold(true)
-                        .append("] ").color(ChatColor.GRAY).bold(false).append("This ban is permanent and does not expire!").color(ChatColor.RED).bold(false).create());
-                else
-                    all.sendMessage(new ComponentBuilder("[").color(ChatColor.GRAY).append("Staff Chat").color(ChatColor.RED).bold(true).append("]").color(ChatColor.GRAY).bold(false)
-                            .append(" ").color(ChatColor.RESET).append("[").color(ChatColor.GRAY).bold(false).append(player.getServer().getInfo().getName()).color(ChatColor.RED).bold(true)
-                            .append("] ").color(ChatColor.GRAY).bold(false).append("This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s").color(ChatColor.RED).bold(false).create());
-            }
-        }
-        bungeeMain.PunishmentLogs.set(targetname + "." + LocalDateTime.now(), "was banned by: " + player.getName() + " for: " + reason);
-        bungeeMain.saveLogs();
+        StaffChat.sendMessage(player.getName() + " Banned: " + targetname + " for: " + reason);
+        if (daysleft > 500)
+            StaffChat.sendMessage("This ban is permanent and does not expire!");
+        else
+            StaffChat.sendMessage("This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
+        ReputationSystem.minusRep(targetname, targetuuid, 4);
+        BungeeMain.Logs.info(targetname + " Was Banned for: " + reason + " by: " + player.getName());
     }
 }
