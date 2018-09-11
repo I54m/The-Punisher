@@ -1,0 +1,62 @@
+name: The-Punisher
+author: 54mpenguin
+website: https://54mpenguin.com
+version: 1.3
+main: me.fiftyfour.punisher.bukkit.BukkitMain
+depend: [LuckPerms]
+
+commands:
+ punish:
+  description: opens the punishment menu.
+  aliases: [pun, p]
+ clearchat:
+  description: Clears chat.
+  aliases: [cc, chatclear]
+ togglechat:
+  description: Toggles chat.
+  aliases: [tc, chattoggle]
+ bold:
+  description: sends a chat message in bold or red bold.
+  aliases: [b]
+
+
+permissions:
+ punisher.punish.level.0:
+  description: allows the player to open the punish gui and issue minimal punishments.
+  default: op
+ punisher.punish.level.1:
+  description: allows the player to issue low level punishments.
+  default: op
+ punisher.punish.level.2:
+  description: allows the player to issue medium level punishments.
+  default: op
+ punisher.punish.level.3:
+  description: allows the player to issue high level, manual punishments.
+  default: op
+ punisher.clearchat:
+  description: allows the player to clear the chat.
+  default: op
+ punisher.clearchat.bypass:
+  description: allows the player's chat not to be cleared on clear chat.
+  default: op
+ punisher.togglechat:
+  description: allows the player to toggle the chat.
+  default: op
+ punisher.togglechat.bypass:
+  description: allows the player to talk when the chat is toggled off.
+  default: op
+ punisher.bypass:
+  description: allows the player to bypass all punishments.
+  default: op
+ punisher.acnotify:
+  description: allows the player to receive an anti cheat notification.
+  default: op
+ punisher.acnotify.use:
+  description: allows the player to send an anti cheat notification.
+  default: op
+ punisher.bold:
+  description: allows the player to make their chat appear bold.
+  default: op
+ punisher.bold.red:
+  description: allows the player to make their chat appear red bold.
+  default: op
