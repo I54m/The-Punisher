@@ -286,7 +286,7 @@ public class BungeeMain extends Plugin implements Listener {
                 return;
             }
             connection = DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.extraArguments, this.username, this.password);
-            getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connected!");
+            getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connected to server: " + host + ":" + port + " with user: " + username + "!");
         }
     }
     public void setupmysql(){
@@ -310,14 +310,12 @@ public class BungeeMain extends Plugin implements Listener {
                     " `Disallowed Mods` TINYINT NOT NULL DEFAULT '0' , `Server Advertisment` TINYINT NOT NULL DEFAULT '0' , `Greifing` TINYINT NOT NULL DEFAULT '0' ," +
                     " `Exploiting` TINYINT NOT NULL DEFAULT '0' , `Tpa-Trapping` TINYINT NOT NULL DEFAULT '0' , `Impersonation` TINYINT NOT NULL DEFAULT '0' , `Manual Punishments` TINYINT NOT NULL DEFAULT '0' ) ENGINE = InnoDB;";
             String ip = "CREATE TABLE IF NOT EXISTS`" + database + "`.`iplist` ( `UUID` VARCHAR(32) NOT NULL , `ip` VARCHAR(32) NOT NULL ) ENGINE = InnoDB;";
-            String usedb = "USE " + database;
             PreparedStatement stmt = connection.prepareStatement(createdb);
             PreparedStatement stmt1 = connection.prepareStatement(bans);
             PreparedStatement stmt2 = connection.prepareStatement(mutes);
             PreparedStatement stmt3 = connection.prepareStatement(history);
             PreparedStatement stmt4 = connection.prepareStatement(staffhist);
             PreparedStatement stmt5 = connection.prepareStatement(ip);
-            PreparedStatement stmt6 = connection.prepareStatement(usedb);
             stmt.executeUpdate();
             getLogger().info(prefix + ChatColor.GREEN + database + " Database Created!");
             stmt1.executeUpdate();
@@ -326,8 +324,6 @@ public class BungeeMain extends Plugin implements Listener {
             stmt4.executeUpdate();
             stmt5.executeUpdate();
             getLogger().info(prefix + ChatColor.GREEN + "Tables Created!");
-            stmt6.executeUpdate();
-            getLogger().info(prefix + ChatColor.GREEN + "Database Set to: " + database);
             getLogger().info(prefix + ChatColor.GREEN + "MYSQL setup!");
             getLogger().info("");
             getLogger().info(prefix + ChatColor.GREEN + "SQL Connection is now online!");
