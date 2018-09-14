@@ -1,5 +1,6 @@
 ######################################################################################The Punisher Main config ###########################################################################################################
-Configversion: 1.2.1 #DO NOT TOUCH THIS IT WILL MAKE A NEW CONFIG!!
+Configversion: "1.3"
+#DO NOT TOUCH THIS IT WILL MAKE A NEW CONFIG!!
 #This config is for the main config options, if you want to edit the automatic punishments go to punishments.yml in your bungee folder
 
 #MYSql settings
@@ -12,7 +13,7 @@ username: punisher
 password: punisher
 #the port must be an integer, default is 3306
 port: 3306
-extraArguments: Peoples?useSSL=false
+extraArguments: ?useSSL=false
 
 #commands you want to be blocked when a player is muted (BungeeCord only)
 Muted Commands:
@@ -49,5 +50,5 @@ helpCommand:
   TextToUse: "\n- Need help? do /warp tutorial to go through the tutorial.\n
      \n- Report players using /report <player> <reason> and staff will be notified.\n
      \n- Need extra help? join our discord and ask around for help!\n
-     \n- Link: https://discord.vorplex.net\n"
+     \n- Link: http://discord.vorplex.net\n"
   ColorToUse: "light_purple"
