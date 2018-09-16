@@ -4,16 +4,20 @@ Configversion: "1.3.2"
 #This config is for the main config options, if you want to edit the automatic punishments go to punishments.yml in your bungee folder
 
 #MYSql settings
-#host use 127.0.0.1 or localhost for localhost
-host: localhost
-#name of the database you want the plugin to use (will create it if it doesn't exist)
-database: punisherdb
-#username and password you want to plugin to use to access the MYSql database
-username: punisher
-password: punisher
-#the port must be an integer, default is 3306
-port: 3306
-extraArguments: ?useSSL=false
+MySQL:
+  #host use 127.0.0.1 or localhost for localhost
+  host: localhost
+  #name of the database you want the plugin to use (will create it if it doesn't exist)
+  database: punisherdb
+  #username and password you want to plugin to use to access the MYSql database
+  username: punisher
+  password: punisher
+  #the port must be an integer, default is 3306
+  port: 3306
+  #Extra arguments to use in the sql url
+  extraArguments: ?useSSL=false
+  #should extra debug messages be shown for the sql connection tester?
+  debugMode: false
 
 #commands you want to be blocked when a player is muted (BungeeCord only)
 Muted Commands:
