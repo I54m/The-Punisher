@@ -16,41 +16,74 @@ public class UpdateChecker {
 
     public static String getCurrentVersion(){
         StringBuilder result = new StringBuilder();
-        readData(versionString, result, 25);
+        readData(versionString, result, "current-version-number");
         if (result.toString().equals("null")){
             return null;
         }else
         return result.toString();
     }
 
-    public static boolean check(){
+    public static boolean check() throws Exception{
         if (getCurrentVersion() == null)
             return false;
         try {
             Class.forName("net.md_5.bungee.BungeeCord");
             BungeeMain plugin = BungeeMain.getInstance();
-            return !getCurrentVersion().equals(plugin.getDescription().getVersion());
+            if (!getCurrentVersion().equals(plugin.getDescription().getVersion())) {
+                String[] thisParts = plugin.getDescription().getVersion().split("\\.");
+                String[] thatParts = getCurrentVersion().split("\\.");
+                int length = Math.max(thisParts.length, thatParts.length);
+                for (int i = 0; i < length; i++) {
+                    int thisPart = i < thisParts.length ?
+                            Integer.parseInt(thisParts[i]) : 0;
+                    int thatPart = i < thatParts.length ?
+                            Integer.parseInt(thatParts[i]) : 0;
+                    if (thisPart < thatPart)
+                        return true;
+                    if (thisPart > thatPart) {
+                        throw new Exception("Your version number is newer than the version on the website, either you have a dev version or the website api has not been updated!");
+                    }
+                }
+                return false;
+            }else return false;
         }catch (ClassNotFoundException CNFE){
             BukkitMain plugin = BukkitMain.getInstance();
-            return !getCurrentVersion().equals(plugin.getDescription().getVersion());
+            if (!getCurrentVersion().equals(plugin.getDescription().getVersion())) {
+                String[] thisParts = plugin.getDescription().getVersion().split("\\.");
+                String[] thatParts = getCurrentVersion().split("\\.");
+                int length = Math.max(thisParts.length, thatParts.length);
+                for (int i = 0; i < length; i++) {
+                    int thisPart = i < thisParts.length ?
+                            Integer.parseInt(thisParts[i]) : 0;
+                    int thatPart = i < thatParts.length ?
+                            Integer.parseInt(thatParts[i]) : 0;
+                    if (thisPart < thatPart)
+                        return true;
+                    if (thisPart > thatPart) {
+                        throw new Exception("Your version number is newer than the version on the website, either you have a dev version or the website api has not been updated!");
+                    }
+                }
+                return false;
+            }else return false;
         }
     }
 
     public static String getRealeaseDate(){
         StringBuilder result = new StringBuilder();
-        readData(versionString, result, 44);
+        readData(versionString, result, "last-update");
         if (result.toString().equals("null")){
             return null;
         }else
         return result.toString();
     }
 
-    private static void readData(String toRead, StringBuilder result, int start) {
-        int i = start;
+    private static void readData(String toRead, StringBuilder result, String lookingFor) {
+        String lookFor = lookingFor + ":\"";
         if (toRead == null) {
             result.append("null");
             return;
         }
+        int i = toRead.indexOf(lookFor) + lookFor.length();
         while (i < 200) {
             if (toRead.length() == 0) {
                 result.append("null");

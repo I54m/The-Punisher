@@ -45,15 +45,19 @@ public class BukkitMain extends JavaPlugin implements Listener {
             this.setEnabled(false);
         }
         getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Checking for updates...");
-        if (UpdateChecker.getCurrentVersion() == null){
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Could not check for update!");
-        }else if (UpdateChecker.check()){
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "Update checker found an update, current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This update was released on: " + UpdateChecker.getRealeaseDate());
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This may fix some bugs and enhance features.");
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "You will no longer receive support for this version!");
-        }else{
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Plugin is up to date!");
+        try {
+            if (UpdateChecker.getCurrentVersion() == null) {
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Could not check for update!");
+            } else if (UpdateChecker.check()) {
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "Update checker found an update, current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This update was released on: " + UpdateChecker.getRealeaseDate());
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This may fix some bugs and enhance features.");
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "You will no longer receive support for this version!");
+            } else {
+                getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Plugin is up to date!");
+            }
+        }catch (Exception e){
+            getLogger().severe(e.getMessage());
         }
     }
 }

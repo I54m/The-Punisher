@@ -121,31 +121,35 @@ public class BungeeMain extends Plugin implements Listener {
         }
         //check for update
         getLogger().info(prefix + ChatColor.GREEN + "Checking for updates...");
-        if (UpdateChecker.getCurrentVersion() == null){
-            getLogger().info(prefix + ChatColor.GREEN + "Could not check for update!");
-            update = false;
-        }else if (UpdateChecker.check()){
-            getLogger().warning(prefix + ChatColor.RED + "Update checker found an update, current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
-            getLogger().warning(prefix + ChatColor.RED + "This update was released on: " + UpdateChecker.getRealeaseDate());
-            getLogger().warning(prefix + ChatColor.RED + "This may fix some bugs and enhance features.");
-            getLogger().warning(prefix + ChatColor.RED + "You will no longer receive support for this version!");
-            Logs.warning("Update checker found an update current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
-            Logs.warning("This update was released on: " + UpdateChecker.getRealeaseDate());
-            Logs.warning("This may fix some bugs and enhance features.");
-            Logs.warning("You will no longer receive support for this version!");
-            update = true;
-        }else{
-            getLogger().info(prefix + ChatColor.GREEN + "Plugin is up to date!");
-            update = false;
+        try {
+            if (UpdateChecker.getCurrentVersion() == null) {
+                getLogger().info(prefix + ChatColor.GREEN + "Could not check for update!");
+                update = false;
+            } else if (UpdateChecker.check()) {
+                getLogger().warning(prefix + ChatColor.RED + "Update checker found an update, current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
+                getLogger().warning(prefix + ChatColor.RED + "This update was released on: " + UpdateChecker.getRealeaseDate());
+                getLogger().warning(prefix + ChatColor.RED + "This may fix some bugs and enhance features.");
+                getLogger().warning(prefix + ChatColor.RED + "You will no longer receive support for this version!");
+                Logs.warning("Update checker found an update current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
+                Logs.warning("This update was released on: " + UpdateChecker.getRealeaseDate());
+                Logs.warning("This may fix some bugs and enhance features.");
+                Logs.warning("You will no longer receive support for this version!");
+                update = true;
+            } else {
+                getLogger().info(prefix + ChatColor.GREEN + "Plugin is up to date!");
+                update = false;
+            }
+        }catch (Exception e){
+            getLogger().severe(ChatColor.RED + e.getMessage());
         }
         //setup mysql connection
         getLogger().info(prefix + ChatColor.GREEN + "Establishing MYSQL connection...");
-        host = PunisherConfig.getString("host");
-        database = PunisherConfig.getString("database");
-        username = PunisherConfig.getString("username");
-        password = PunisherConfig.getString("password");
-        port = PunisherConfig.getInt("port");
-        extraArguments = PunisherConfig.getString("extraArguments");
+        host = PunisherConfig.getString("MySQL.host");
+        database = PunisherConfig.getString("MySQL.database");
+        username = PunisherConfig.getString("MySQL.username");
+        password = PunisherConfig.getString("MySQL.password");
+        port = PunisherConfig.getInt("MySQL.port");
+        extraArguments = PunisherConfig.getString("MySQL.extraArguments");
         try {
             openConnection();
         } catch (SQLException e) {
@@ -357,12 +361,15 @@ public class BungeeMain extends Plugin implements Listener {
     public boolean testConnectionManual(){
         try {
             if (connection != null && !connection.isClosed()) {
+                if (PunisherConfig.getBoolean("MySQL.debugMode"))
                 getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connection is still open, Testing validity of connection....");
                 try {
                     if (connection.isValid(10)) {
+                        if (PunisherConfig.getBoolean("MySQL.debugMode"))
                         getLogger().info(prefix + ChatColor.GREEN + "Connection Valid, no need to reset!");
                         return true;
                     } else {
+                        if (PunisherConfig.getBoolean("MySQL.debugMode"))
                         getLogger().info(prefix + ChatColor.RED + "Connection Invalid after: 60 minutes, resetting connection...");
                         connection.close();
                         openConnection();
@@ -371,25 +378,30 @@ public class BungeeMain extends Plugin implements Listener {
                     }
                 }catch (SQLException e){
                     try {
+                        if (PunisherConfig.getBoolean("MySQL.debugMode"))
                         getLogger().info(prefix + ChatColor.RED + "Connection Invalid, resetting connection...");
                         connection.close();
                         openConnection();
                         setupmysql();
                         return true;
                     }catch (Exception ex){
+                        if (PunisherConfig.getBoolean("MySQL.debugMode"))
                         getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
                         mysqlfail(ex);
                         return false;
                     }
                 }
             }else{
-                getLogger().info(prefix + ChatColor.RED + "SQL Connection not connected after: 60 minutes, reconnecting!");
-                getLogger().info(prefix + ChatColor.GREEN + "Establishing New MYSQL connection...");
-                host = PunisherConfig.getString("host");
-                database = PunisherConfig.getString("database");
-                username = PunisherConfig.getString("username");
-                password = PunisherConfig.getString("password");
-                port = PunisherConfig.getInt("port");
+                if (PunisherConfig.getBoolean("MySQL.debugMode")) {
+                    getLogger().info(prefix + ChatColor.RED + "SQL Connection not connected after: 60 minutes, reconnecting!");
+                    getLogger().info(prefix + ChatColor.GREEN + "Establishing New MYSQL connection...");
+                }
+                host = PunisherConfig.getString("MySQL.host");
+                database = PunisherConfig.getString("MySQL.database");
+                username = PunisherConfig.getString("MySQL.username");
+                password = PunisherConfig.getString("MySQL.password");
+                port = PunisherConfig.getInt("MySQL.port");
+                extraArguments = PunisherConfig.getString("MySQL.extraArguments");
                 try {
                     openConnection();
                 } catch (SQLException e) {
@@ -402,13 +414,18 @@ public class BungeeMain extends Plugin implements Listener {
                 return true;
             }
         }catch (Exception e) {
+            if (PunisherConfig.getBoolean("MySQL.debugMode"))
             getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection test failed!!!");
             try {
-                getLogger().info(prefix + ChatColor.RED + "SQL Connection not stable, resetting!");
-                getLogger().info(prefix + ChatColor.GREEN + "Closing MYSQL connection...");
+                if (PunisherConfig.getBoolean("MySQL.debugMode")) {
+                    getLogger().info(prefix + ChatColor.RED + "SQL Connection not stable, resetting!");
+                    getLogger().info(prefix + ChatColor.GREEN + "Closing MYSQL connection...");
+                }
                 connection.close();
-                getLogger().info(prefix + ChatColor.GREEN + "Connection closed!");
-                getLogger().info(prefix + ChatColor.GREEN + "Establishing New MYSQL connection...");
+                if (PunisherConfig.getBoolean("MySQL.debugMode")) {
+                    getLogger().info(prefix + ChatColor.GREEN + "Connection closed!");
+                    getLogger().info(prefix + ChatColor.GREEN + "Establishing New MYSQL connection...");
+                }
                 host = PunisherConfig.getString("host");
                 database = PunisherConfig.getString("database");
                 username = PunisherConfig.getString("username");
@@ -417,6 +434,7 @@ public class BungeeMain extends Plugin implements Listener {
                 try {
                     openConnection();
                 } catch (SQLException ex) {
+                    if (PunisherConfig.getBoolean("MySQL.debugMode"))
                     getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection failed!!! (SQLException)");
                     mysqlfail(ex);
                     return false;
@@ -425,6 +443,7 @@ public class BungeeMain extends Plugin implements Listener {
                 setupmysql();
                 return true;
             } catch (Exception ex) {
+                if (PunisherConfig.getBoolean("MySQL.debugMode"))
                 getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
                 mysqlfail(ex);
                 return false;
