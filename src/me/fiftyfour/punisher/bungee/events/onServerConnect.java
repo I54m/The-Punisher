@@ -26,13 +26,13 @@ public class onServerConnect implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void ServerConnectEvent(final ServerConnectEvent event) {
-        if (!event.getReason().equals(ServerConnectEvent.Reason.JOIN_PROXY) || !event.getReason().equals(ServerConnectEvent.Reason.UNKNOWN)) return;
-        UUID uuid;
-        String fetcheduuid;
+        if (!event.getReason().equals(ServerConnectEvent.Reason.JOIN_PROXY)){
+            if (!event.getReason().equals(ServerConnectEvent.Reason.UNKNOWN)) return;
+        }
+        UUID uuid = event.getPlayer().getUniqueId();
+        String fetcheduuid = uuid.toString().replace("-", "");
         ArrayList<String> altslist = new ArrayList<>();
         ProxiedPlayer player = event.getPlayer();
-        uuid = event.getPlayer().getUniqueId();
-        fetcheduuid = uuid.toString().replace("-", "");
         if (BungeeMain.update && player.hasPermission("punisher.admin")){
             player.sendMessage(new ComponentBuilder(prefix).append("Update checker found an update, current version: " + plugin.getDescription().getVersion() + " latest version: "
                     + UpdateChecker.getCurrentVersion()  + " this update was released on: " + UpdateChecker.getRealeaseDate()).color(ChatColor.RED).create());
@@ -52,57 +52,57 @@ public class onServerConnect implements Listener {
                     PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
                     stmtipadd.executeUpdate();
                 }
-                String sql = "SELECT * FROM `bans` WHERE UUID='" + fetcheduuid + "'";
-                PreparedStatement stmt = plugin.connection.prepareStatement(sql);
-                results = stmt.executeQuery();
-                if (results.next()){
-                    if (player.hasPermission("punisher.bypass")) {
-                        String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
-                        PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                        stmt1.executeUpdate();
-                        BungeeMain.Logs.info(player.getName() + " Bypassed their ban and were unbanned");
-                        StaffChat.sendMessage(player.getName() + " Bypassed their ban, Unbanning...");
-                        return;
-                    }
-                    Long bantime = results.getLong("Length");
-                    if (System.currentTimeMillis() > bantime) {
-                        String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
-                        PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                        stmt1.executeUpdate();
-                        BungeeMain.Logs.info(player.getName() + "'s ban expired so they were unbanned");
-                    } else {
-                        event.setCancelled(true);
-                        kick(event.getPlayer());
-                        return;
-                    }
-                }
-                String ip = player.getAddress().getHostString();
-                String sqlip1 = "SELECT * FROM `iplist` WHERE ip='" + ip + "'";
-                PreparedStatement stmtip1 = plugin.connection.prepareStatement(sqlip1);
-                ResultSet resultsip1 = stmtip1.executeQuery();
-                while(resultsip1.next()) {
-                    String concacc = resultsip1.getString("uuid");
-                    altslist.add(concacc);
-                }
-                altslist.remove(player.getName());
-                if (!altslist.isEmpty()){
-                    ArrayList<String> bannedalts = new ArrayList<>();
-                    for (String alts : altslist){
-                        String sql1 = "SELECT * FROM `bans` WHERE UUID='" + alts + "'";
-                        PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                        ResultSet results1 = stmt1.executeQuery();
-                        if (results1.next()){
-                            bannedalts.add(NameFetcher.getName(results1.getString("uuid")));
-                        }
-                    }
-                    if (!bannedalts.isEmpty()){
-                        StaffChat.sendMessage(player.getName() + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", ""));
-                    }
-                }
             }else{
                 String sql1 = "INSERT INTO `iplist` (`UUID`, `ip`) VALUES ('"+ fetcheduuid + "', '" + player.getAddress().getHostString() + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+            }
+            String sql = "SELECT * FROM `bans` WHERE UUID='" + fetcheduuid + "'";
+            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+            results = stmt.executeQuery();
+            if (results.next()){
+                if (player.hasPermission("punisher.bypass")) {
+                    String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
+                    PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                    stmt1.executeUpdate();
+                    BungeeMain.Logs.info(player.getName() + " Bypassed their ban and were unbanned");
+                    StaffChat.sendMessage(player.getName() + " Bypassed their ban, Unbanning...");
+                    return;
+                }
+                Long bantime = results.getLong("Length");
+                if (System.currentTimeMillis() > bantime) {
+                    String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
+                    PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                    stmt1.executeUpdate();
+                    BungeeMain.Logs.info(player.getName() + "'s ban expired so they were unbanned");
+                } else {
+                    event.setCancelled(true);
+                    kick(event.getPlayer());
+                    return;
+                }
+            }
+            String ip = player.getAddress().getHostString();
+            String sqlip1 = "SELECT * FROM `iplist` WHERE ip='" + ip + "'";
+            PreparedStatement stmtip1 = plugin.connection.prepareStatement(sqlip1);
+            ResultSet resultsip1 = stmtip1.executeQuery();
+            while(resultsip1.next()) {
+                String concacc = resultsip1.getString("uuid");
+                altslist.add(concacc);
+            }
+            altslist.remove(player.getUniqueId().toString().replace("-", ""));
+            if (!altslist.isEmpty()){
+                ArrayList<String> bannedalts = new ArrayList<>();
+                for (String alts : altslist){
+                    String sql1 = "SELECT * FROM `bans` WHERE UUID='" + alts + "'";
+                    PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                    ResultSet results1 = stmt1.executeQuery();
+                    if (results1.next()){
+                        bannedalts.add(NameFetcher.getName(results1.getString("uuid")));
+                    }
+                }
+                if (!bannedalts.isEmpty()){
+                    StaffChat.sendMessage(player.getName() + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", ""));
+                }
             }
         } catch (SQLException e) {
             plugin.mysqlfail(e);
