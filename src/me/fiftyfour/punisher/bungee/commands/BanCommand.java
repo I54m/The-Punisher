@@ -47,6 +47,10 @@ public class BanCommand extends Command {
         if (targetname.equalsIgnoreCase("null")) {
             targetname = strings[0];
         }
+        if (!Permissions.higher(player, targetname)){
+            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+            return;
+        }
         try {
             String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
@@ -140,10 +144,6 @@ public class BanCommand extends Command {
             plugin.mysqlfail(e);
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
-        }
-        if (!Permissions.higher(player, targetname)){
-            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
             return;
         }
         try {
