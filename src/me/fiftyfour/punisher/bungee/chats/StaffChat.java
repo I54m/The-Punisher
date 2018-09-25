@@ -9,6 +9,7 @@ import me.lucko.luckperms.api.context.ContextManager;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -49,10 +50,12 @@ public class StaffChat extends Command {
             if (prefix == null) {
                 prefix = "";
             }
+            BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("SC").color(ChatColor.RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
+                    .append(" ").color(ChatColor.RESET).append(ChatColor.translateAlternateColorCodes('&', prefix + " ")).bold(false).append(player.getName() + ": " + sb)
+                    .color(ChatColor.RED).bold(false).create();
             for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
                 if (all.hasPermission("punisher.staffchat")) {
-                    all.sendMessage(new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("SC").color(ChatColor.RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
-                            .append(" ").color(ChatColor.RESET).append(ChatColor.translateAlternateColorCodes('&', prefix + " ")).bold(false).append(player.getName() + ": " + sb).color(ChatColor.RED).bold(false).create());
+                    all.sendMessage(messagetosend);
                 }
             }
         } else {
@@ -60,10 +63,11 @@ public class StaffChat extends Command {
         }
     }
     public static void sendMessage(String message){
+        BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("SC").color(ChatColor.RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
+                .append(" ").color(ChatColor.RESET).bold(false).append(message).color(ChatColor.RED).bold(false).create();
         for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
             if (all.hasPermission("punisher.staffchat")) {
-                all.sendMessage(new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("SC").color(ChatColor.RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
-                        .append(" ").color(ChatColor.RESET).bold(false).append(message).color(ChatColor.RED).bold(false).create());
+                all.sendMessage(messagetosend);
             }
         }
     }
