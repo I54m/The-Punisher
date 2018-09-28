@@ -36,6 +36,9 @@ public class IconMenu implements Listener {
         this.size = size * 9;
         items = Arrays.copyOf(items, this.size);
     }
+    public void setName(String name) {
+        this.name = name;
+    }
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         for (Player p : this.getViewers())

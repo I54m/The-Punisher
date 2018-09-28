@@ -130,7 +130,7 @@ permissions:
   description: Means the player will not be reported to other staff but to admins instead.
   
  punisher.broadcast:
-  description: allows the player to use /broadcast
+  description: allows the player to use /broadcast and /global
   
  punisher.viewrep:
   description: allows the player to view a player's reputation.

@@ -15,9 +15,8 @@ import java.util.concurrent.CompletableFuture;
 
 public class Permissions {
 
-    public static Boolean higher(ProxiedPlayer player, String targetname) {
-        String uuid = UUIDFetcher.getUUID(targetname);
-        UUID formattedUUID = UUIDFetcher.formatUUID(uuid);
+    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) {
+        UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
             user = giveMeADamnUser(formattedUUID);
@@ -44,9 +43,8 @@ public class Permissions {
             return true;
         }
     }
-    public static Boolean higher(Player player, String targetname) {
-        String uuid = UUIDFetcher.getUUID(targetname);
-        UUID formattedUUID = UUIDFetcher.formatUUID(uuid);
+    public static Boolean higher(Player player, String targetuuid, String targetname) {
+        UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
             user = giveMeADamnUser(formattedUUID);
