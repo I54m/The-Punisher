@@ -136,13 +136,13 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
         ItemMeta ibmeta = Iron_Boots.getItemMeta();
         ibmeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         Iron_Boots.setItemMeta(ibmeta);
-        menu = new IconMenu(ChatColor.LIGHT_PURPLE + "Punish: " + targetName + reputation.toString(), 2, new IconMenu.onClick() {
+        menu = new IconMenu(ChatColor.LIGHT_PURPLE + "Punish: " + targetName + " " + reputation.toString(), 2, new IconMenu.onClick() {
             @Override
             public boolean click(Player p, IconMenu menu, IconMenu.Row row, int slot, ItemStack item) {
                 itemName = item.getItemMeta().getDisplayName();
                 clicker = p;
                 if (item.getItemMeta().getLore() != null) {
-                    punishmentSelected(targetName, targetuuid, row.getRow(), slot, item.getItemMeta().getLore().toString());
+                    punishmentSelected(targetuuid, targetName, row.getRow(), slot, item.getItemMeta().getLore().toString());
                     return true;
                 }
                 return false;
@@ -316,12 +316,13 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
             ByteArrayDataInput in = ByteStreams.newDataInput(message);
             String subchannel = in.readUTF();
             if (subchannel.equals("rep")) {
+                String repstring = in.readUTF();
                 double rep;
                 String targetuuid = in.readUTF();
                 String targetname = in.readUTF();
                 reputation = new StringBuilder();
                 try {
-                    rep = Double.parseDouble(in.readUTF());
+                    rep = Double.parseDouble(repstring);
                 } catch (NumberFormatException e) {
                     reputation.append(ChatColor.WHITE).append("(").append("-").append("/10").append(")");
                     openGUI(player, targetuuid, targetname);
