@@ -31,7 +31,7 @@ public class KickCommand extends Command {
                 player.sendMessage(new ComponentBuilder(prefix).append("That is not an online player's name!").color(ChatColor.RED).create());
                 return;
             }
-            if (!Permissions.higher(player, target.getName())){
+            if (!Permissions.higher(player, target.getUniqueId().toString().replace("-", ""), target.getName())){
                 player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
                 return;
             }

@@ -29,14 +29,13 @@ public class PunishmentCalc implements Listener {
     private Long currentlength;
     private HashMap<String, Long> cooldowns = new HashMap<>();
     private String name, uuid, reason;
-    private Connection sender;
     private ProxiedPlayer punisher;
     private int offence;
 
     @EventHandler
     public void onPluginMessage(PluginMessageEvent e) {
         String action;
-        sender = e.getReceiver();
+        Connection sender = e.getReceiver();
         if (e.getTag().equalsIgnoreCase("BungeeCord")) {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(e.getData()));
             try {
@@ -58,7 +57,10 @@ public class PunishmentCalc implements Listener {
                     String sql1 = "INSERT INTO `history` (UUID) VALUES ('"+ uuid + "');";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                     stmt1.executeUpdate();
+                    stmt1.close();
                 }
+                stmt.close();
+                results.close();
                 String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + punisher.getUniqueId().toString().replace("-", "") + "'";
                 PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
                 ResultSet results2 = stmt2.executeQuery();
@@ -66,7 +68,10 @@ public class PunishmentCalc implements Listener {
                     String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('"+ punisher.getUniqueId().toString().replace("-", "") + "');";
                     PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                     stmt3.executeUpdate();
+                    stmt3.close();
                 }
+                stmt2.close();
+                results2.close();
                 punish(uuid, reason);
             }catch (SQLException sqle){
                 plugin.mysqlfail(sqle);
@@ -78,7 +83,7 @@ public class PunishmentCalc implements Listener {
 
     private void punish(String uuid, String reason) {
         try {
-            int cooldownTime = 15;
+            int cooldownTime = 20;
             if (cooldowns.containsKey(name) && !punisher.hasPermission("punisher.cooldowns.override")) {
                 long secondsLeft = ((cooldowns.get(name) / 1000) + cooldownTime) - (System.currentTimeMillis() / 1000);
                 if (secondsLeft > 0) {
@@ -98,9 +103,13 @@ public class PunishmentCalc implements Listener {
             int Punishmentno;
             if (!reason.contains("Manually "))Punishmentno = staffHistory.getInt(reason);
             else Punishmentno = staffHistory.getInt("Manual Punishments");
+            stmt2.close();
+            staffHistory.close();
             int current;
             if (!reason.contains("Manually "))current = history.getInt(reason);
             else current = history.getInt("Manual Punishments");
+            stmt.close();
+            history.close();
             ProxiedPlayer player = ProxyServer.getInstance().getPlayer(UUIDFetcher.formatUUID(uuid));
             if (reason.contains("Manually ")) {
                 if (reason.contains("Warned")) {
@@ -200,16 +209,20 @@ public class PunishmentCalc implements Listener {
                 String sql1 = "UPDATE `staffhistory` SET `" + reason + "`=" + Punishmentno + " WHERE UUID='" + punisher.getUniqueId().toString().replace("-", "") + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
                 String sql3 = "UPDATE `history` SET `" + reason + "`='" + current + "' WHERE `UUID`='" + uuid + "' ;";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
+                stmt3.close();
             }else{
                 String sql1 = "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + " WHERE UUID='" + punisher.getUniqueId().toString().replace("-", "") + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
                 String sql4 = "UPDATE `history` SET `Manual Punishments`='" + current + "' WHERE `UUID`='" + uuid + "' ;";
                 PreparedStatement stmt4 = plugin.connection.prepareStatement(sql4);
                 stmt4.executeUpdate();
+                stmt4.close();
             }
             if (reason.equals("Other Minor Offence") || reason.equals("Other Major Offence") || reason.equals("Other Offence") || reason.contains("Manually ")){
                 BungeeMain.Logs.info(name + " Was punished for: " + reason + " by: " + punisher.getName());
@@ -280,18 +293,22 @@ public class PunishmentCalc implements Listener {
                 String sql1 = "INSERT INTO `mutes` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('"+ uuid + "', '" + name + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', '" + punisher.getName() + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }else{
                 if (reason.contains("Manually "))currentlength = results.getLong("Length") - System.currentTimeMillis();
                 else currentlength = (long)0;
                 String sql1 = "UPDATE `mutes` SET `UUID`='" + uuid + "', `Name`='" + name + "', `Length`='" + ((currentlength + length)+ System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='" + punisher.getName() + "' WHERE `UUID`='" + uuid + "' ;";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
+            stmt.close();
+            results.close();
             Long muteleftmillis = currentlength + length;
-            long daysleft = muteleftmillis / (1000 * 60 * 60 * 24);
-            long hoursleft = (long) Math.floor(muteleftmillis / (1000 * 60 * 60) % 24);
-            long minutesleft = (long) Math.floor(muteleftmillis / (1000 * 60) % 60);
-            long secondsleft = (long) Math.floor(muteleftmillis / 1000 % 60);
+            int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
+            int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
+            int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
+            int secondsleft = (int) (muteleftmillis / 1000 % 60);
             if (player != null) {
                 ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).fadeIn(5).stay(100).fadeOut(5).send(player);
                 player.sendMessage(new TextComponent("\n"));
@@ -338,6 +355,7 @@ public class PunishmentCalc implements Listener {
                 String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('"+ uuid + "', '" + name + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', '" + punisher.getName() + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }else {
                 if (reason.contains("Manually "))
                     currentlength = results.getLong("Length") - System.currentTimeMillis();
@@ -345,12 +363,15 @@ public class PunishmentCalc implements Listener {
                 String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + name + "', `Length`='" + ((currentlength + length) + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='" + punisher.getName() + "' WHERE `UUID`='" + uuid + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
+            stmt.close();
+            results.close();
             Long banleftmillis = currentlength + length;
-            long daysleft = banleftmillis / (1000 * 60 * 60 * 24);
-            long hoursleft = (long) Math.floor(banleftmillis / (1000 * 60 * 60) % 24);
-            long minutesleft = (long) Math.floor(banleftmillis / (1000 * 60) % 60);
-            long secondsleft = (long) Math.floor(banleftmillis / 1000 % 60);
+            int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
+            int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
+            int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
+            int secondsleft = (int) (banleftmillis / 1000 % 60);
             if (daysleft > 500) {
                 String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
                         .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))

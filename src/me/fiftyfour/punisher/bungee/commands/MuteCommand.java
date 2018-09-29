@@ -17,12 +17,15 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.*;
 
 public class MuteCommand extends Command {
 
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
     private long length;
+    private String targetuuid;
+    private String targetname;
 
     public MuteCommand() {
         super("mute", "punisher.mute", "tempmute");
@@ -39,38 +42,28 @@ public class MuteCommand extends Command {
             player.sendMessage(new ComponentBuilder(prefix).append("Mute a player from speaking").color(ChatColor.RED).append("\nUsage: /mute <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
-        String targetuuid = UUIDFetcher.getUUID(strings[0]);
-        if (targetuuid.equalsIgnoreCase("null")) {
-            player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
-            return;
-        }
-        String targetname = NameFetcher.getName(targetuuid);
-        if (targetname.equalsIgnoreCase("null")) {
-            targetname = strings[0];
-        }
-        if (!Permissions.higher(player, targetname)){
-            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
-            return;
+        ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
+        Future<String> future = null;
+        ExecutorService executorService = null;
+        if (findTarget != null){
+            targetuuid = findTarget.getUniqueId().toString().replace("-", "");
+        }else {
+            UUIDFetcher uuidFetcher = new UUIDFetcher();
+            uuidFetcher.fetch(strings[0]);
+            executorService = Executors.newSingleThreadExecutor();
+            future = executorService.submit(uuidFetcher);
         }
         try {
-            String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
-            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
-            ResultSet results = stmt.executeQuery();
-            if (!results.next()) {
-                String sql1 = "INSERT INTO `history` (UUID) VALUES ('"+ targetuuid + "');";
-                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                stmt1.executeUpdate();
-            }
             String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results2 = stmt2.executeQuery();
             if (!results2.next()) {
-                String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('"+ player.getUniqueId().toString().replace("-", "") + "');";
+                String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('" + player.getUniqueId().toString().replace("-", "") + "');";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
             }
-        }catch (SQLException e){
-            plugin.mysqlfail(e);
+        }catch (SQLException sqle){
+            plugin.mysqlfail(sqle);
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
             return;
@@ -120,6 +113,56 @@ public class MuteCommand extends Command {
             reason.append("Manually Muted");
         }
         String reasonString = reason.toString().replace("\"", "'");
+        if (future != null) {
+            try {
+                targetuuid = future.get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException te) {
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
+                BungeeMain.Logs.severe("Error message: " + te.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
+                BungeeMain.Logs.severe("Error message: " + e.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            }
+            executorService.shutdown();
+        }else return;
+        if (targetuuid == null) {
+            player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
+            return;
+        }
+        targetname = NameFetcher.getName(targetuuid);
+        if (targetname == null) {
+            targetname = strings[0];
+        }
+        if (!Permissions.higher(player, targetuuid, targetname)){
+            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+            return;
+        }
+        try {
+            String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
+            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+            ResultSet results = stmt.executeQuery();
+            if (!results.next()) {
+                String sql1 = "INSERT INTO `history` (UUID) VALUES ('"+ targetuuid + "');";
+                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                stmt1.executeUpdate();
+            }
+        }catch (SQLException e){
+            plugin.mysqlfail(e);
+            if (plugin.testConnectionManual())
+                this.execute(commandSender, strings);
+            return;
+        }
         try {
             String sql = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
@@ -166,32 +209,37 @@ public class MuteCommand extends Command {
                 this.execute(commandSender, strings);
             return;
         }
-        ProxiedPlayer target = ProxyServer.getInstance().getPlayer(targetname);
-        Long muteleftmillis = length;
-        long daysleft = muteleftmillis / (1000 * 60 * 60 * 24);
-        long hoursleft = (long) Math.floor(muteleftmillis / (1000 * 60 * 60) % 24);
-        long minutesleft = (long) Math.floor(muteleftmillis / (1000 * 60) % 60);
-        long secondsleft = (long) Math.floor(muteleftmillis / 1000 % 60);
-        if (target != null) {
-            ProxyServer.getInstance().createTitle().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).fadeIn(5).stay(100).fadeOut(5).send(target);
-            target.sendMessage(new TextComponent("\n"));
-            target.sendMessage(new ComponentBuilder(prefix).append("You have been Muted! Reason: " + reason.toString()).color(ChatColor.RED).create());
-            target.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());
-            target.sendMessage(new ComponentBuilder(prefix).append("Do /rules for more info!").color(ChatColor.RED).create());
-            if (daysleft > 500) {
-                target.sendMessage(new ComponentBuilder(prefix).append("This mute is permanent and does not expire").color(ChatColor.RED).create());
-                target.sendMessage(new TextComponent("\n"));
-            } else {
-                target.sendMessage(new ComponentBuilder(prefix).append("This mute expires in: " + daysleft + "d " + hoursleft + "hr " + minutesleft + "m " + secondsleft + "s").color(ChatColor.RED).create());
-                target.sendMessage(new TextComponent("\n"));
+        ProxyServer.getInstance().getScheduler().runAsync(plugin, new Runnable() {
+            @Override
+            public void run() {
+                ProxiedPlayer target = ProxyServer.getInstance().getPlayer(targetuuid);
+                Long muteleftmillis = length;
+                int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
+                int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
+                int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
+                int secondsleft = (int) (muteleftmillis / 1000 % 60);
+                if (target != null) {
+                    ProxyServer.getInstance().createTitle().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).fadeIn(5).stay(100).fadeOut(5).send(target);
+                    target.sendMessage(new TextComponent("\n"));
+                    target.sendMessage(new ComponentBuilder(prefix).append("You have been Muted! Reason: " + reason.toString()).color(ChatColor.RED).create());
+                    target.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());
+                    target.sendMessage(new ComponentBuilder(prefix).append("Do /rules for more info!").color(ChatColor.RED).create());
+                    if (daysleft > 500) {
+                        target.sendMessage(new ComponentBuilder(prefix).append("This mute is permanent and does not expire").color(ChatColor.RED).create());
+                        target.sendMessage(new TextComponent("\n"));
+                    } else {
+                        target.sendMessage(new ComponentBuilder(prefix).append("This mute expires in: " + daysleft + "d " + hoursleft + "hr " + minutesleft + "m " + secondsleft + "s").color(ChatColor.RED).create());
+                        target.sendMessage(new TextComponent("\n"));
+                    }
+                }
+                StaffChat.sendMessage(player.getName() + " Muted: " + targetname + " for: " + reason.toString());
+                if (daysleft > 500)
+                    StaffChat.sendMessage("This mute is permanent and does not expire!");
+                else
+                    StaffChat.sendMessage("This mute expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
+                ReputationSystem.minusRep(targetname, targetuuid, 2);
             }
-        }
-        StaffChat.sendMessage(player.getName() + " Muted: " + targetname + " for: " + reason.toString());
-        if (daysleft > 500)
-            StaffChat.sendMessage("This mute is permanent and does not expire!");
-        else
-            StaffChat.sendMessage("This mute expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
-        ReputationSystem.minusRep(targetname, targetuuid, 2);
+        });
         BungeeMain.Logs.info(targetname + " was muted by " + player.getName() + " for: " + reason.toString());
     }
 }

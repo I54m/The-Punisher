@@ -40,11 +40,15 @@ public class ReputationSystem {
                         String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                         stmt1.executeUpdate();
+                        stmt1.close();
                     } else {
                         String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                         stmt1.executeUpdate();
+                        stmt1.close();
                     }
+                    stmt2.close();
+                    results2.close();
                 } catch (SQLException e) {
                     plugin.mysqlfail(e);
                     if (plugin.testConnectionManual()) {
@@ -56,11 +60,15 @@ public class ReputationSystem {
                                 String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                                 stmt1.executeUpdate();
+                                stmt1.close();
                             } else {
                                 String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                                 stmt1.executeUpdate();
+                                stmt1.close();
                             }
+                            stmt2.close();
+                            results2.close();
                         } catch (SQLException sqle) {
                             plugin.mysqlfail(sqle);
                             if (!plugin.testConnectionManual()) {
@@ -109,11 +117,15 @@ public class ReputationSystem {
                         String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                         stmt1.executeUpdate();
+                        stmt1.close();
                     } else {
                         String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                         stmt1.executeUpdate();
+                        stmt1.close();
                     }
+                    stmt2.close();
+                    results2.close();
                 } catch (SQLException e) {
                     plugin.mysqlfail(e);
                     if (plugin.testConnectionManual()) {
@@ -125,11 +137,15 @@ public class ReputationSystem {
                                 String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                                 stmt1.executeUpdate();
+                                stmt1.close();
                             } else {
                                 String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                                 stmt1.executeUpdate();
+                                stmt1.close();
                             }
+                            stmt2.close();
+                            results2.close();
                         } catch (SQLException sqle) {
                             plugin.mysqlfail(sqle);
                             if (!plugin.testConnectionManual()) {
@@ -173,11 +189,15 @@ public class ReputationSystem {
                     String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                     stmt1.executeUpdate();
+                    stmt1.close();
                 } else {
                     String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                     stmt1.executeUpdate();
+                    stmt1.close();
                 }
+                stmt2.close();
+                results2.close();
             } catch (SQLException e) {
                 plugin.mysqlfail(e);
                 if (plugin.testConnectionManual()) {
@@ -189,11 +209,15 @@ public class ReputationSystem {
                             String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + uuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', '" + reason + "', 'CONSOLE');";
                             PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                             stmt1.executeUpdate();
+                            stmt1.close();
                         } else {
                             String sql1 = "UPDATE `bans` SET `UUID`='" + uuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`='" + reason + "', `Punisher`='CONSOLE' WHERE `UUID`='" + uuid + "';";
                             PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                             stmt1.executeUpdate();
+                            stmt1.close();
                         }
+                        stmt2.close();
+                        results2.close();
                     } catch (SQLException sqle) {
                         plugin.mysqlfail(sqle);
                         if (!plugin.testConnectionManual()) {

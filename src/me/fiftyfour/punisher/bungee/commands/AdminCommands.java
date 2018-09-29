@@ -28,7 +28,7 @@ public class AdminCommands extends Command {
                 ProxiedPlayer player = (ProxiedPlayer) commandSender;
                 if (strings[0].equalsIgnoreCase("punishments")) {
                     if (strings.length == 1) {
-                        player.sendMessage(new ComponentBuilder(prefix).append("Usage: /punisher <help|punishments|bans|mutes|reload|testsql>").color(ChatColor.RED).create());
+                        player.sendMessage(new ComponentBuilder(prefix).append("Usage: /punisher punishments <reset|delete>").color(ChatColor.RED).create());
                         return;
                     }
                     if (strings[1].equalsIgnoreCase("reset")) {
@@ -77,6 +77,7 @@ public class AdminCommands extends Command {
                             String sql1 = "TRUNCATE `bans`";
                             PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                             stmt1.executeUpdate();
+                            stmt1.close();
                         }catch (SQLException e){
                             plugin.mysqlfail(e);
                             if (plugin.testConnectionManual())
@@ -97,6 +98,7 @@ public class AdminCommands extends Command {
                             String sql1 = "TRUNCATE `mutes`";
                             PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                             stmt1.executeUpdate();
+                            stmt1.close();
                         }catch (SQLException e){
                             plugin.mysqlfail(e);
                             if (plugin.testConnectionManual())
@@ -119,6 +121,7 @@ public class AdminCommands extends Command {
                         String sql1 = "DROP DATABASE `" + BungeeMain.database + "`";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                         stmt1.executeUpdate();
+                        stmt1.close();
                     }catch (SQLException e){
                         plugin.mysqlfail(e);
                         if (plugin.testConnectionManual())
@@ -153,13 +156,27 @@ public class AdminCommands extends Command {
                     AdminChat.sendMessage("Plugin successfully reset!");
                     AdminChat.sendMessage("\n");
                 }else {
-                    player.sendMessage(new ComponentBuilder(prefix).append("Usage: /punisher <reseteverything|help|punishments|bans|mutes|reload|testsql>").color(ChatColor.RED).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("|------------").strikethrough(true).append(prefix).strikethrough(false).append("------------|").strikethrough(true).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything -").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher help -").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments -").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher reload -").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql -").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
                 }
             } else {
                 commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             }
         } else {
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("Usage: /punisher <reseteverything|help|punishments|bans|mutes|reload|testsql>").color(ChatColor.RED).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("|------------").strikethrough(true).append(prefix).strikethrough(false).append("------------|").strikethrough(true).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything -").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher help -").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments -").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reload -").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql -").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
         }
     }
 }

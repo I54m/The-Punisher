@@ -13,6 +13,7 @@ import me.lucko.luckperms.api.Contexts;
 import me.lucko.luckperms.api.User;
 import me.lucko.luckperms.api.caching.PermissionData;
 import me.lucko.luckperms.api.context.ContextManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -28,6 +29,7 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 
 public class PunishGUI implements PluginMessageListener, CommandExecutor {
@@ -57,17 +59,53 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                     p.sendMessage(ChatColor.RED + "Please provide a player's name!");
                     return false;
                 }
-                String targetUuid = UUIDFetcher.getUUID(args[0]);
-                if (targetUuid.equals("null")) {
+                String targetuuid;
+                Player findTarget = Bukkit.getPlayer(args[0]);
+                Future<String> future = null;
+                ExecutorService executorService = null;
+                if (findTarget != null){
+                    targetuuid = findTarget.getUniqueId().toString().replace("-", "");
+                }else {
+                    UUIDFetcher uuidFetcher = new UUIDFetcher();
+                    uuidFetcher.fetch(args[0]);
+                    executorService = Executors.newSingleThreadExecutor();
+                    future = executorService.submit(uuidFetcher);
+                }
+                if (future != null) {
+                    try {
+                        targetuuid = future.get(10, TimeUnit.SECONDS);
+                    } catch (TimeoutException te) {
+                        p.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Connection to mojang API took too long! Unable to fetch " + args[0] + "'s uuid!");
+                        p.sendMessage(prefix + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Connection to mojang API took too long! Unable to fetch " + args[0] + "'s uuid!");
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + te.getMessage());
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + te.getStackTrace().toString());
+                        executorService.shutdown();
+                        return false;
+                    } catch (Exception e) {
+                        p.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Unexpected Error while setting up GUI! Unable to fetch " + args[0] + "'s uuid!");
+                        p.sendMessage(prefix + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Unexpected error while setting up GUI! Unable to fetch " + args[0] + "'s uuid!");
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + e.getMessage());
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace" + e.getStackTrace().toString());
+                        return false;
+                    }
+                    executorService.shutdown();
+                }else return false;
+                if (targetuuid == null) {
                     p.sendMessage(ChatColor.RED + "That is not a player's name!");
                     return false;
                 }
-                UUID formatedUuid = UUIDFetcher.formatUUID(targetUuid);
+                UUID formatedUuid = UUIDFetcher.formatUUID(targetuuid);
                 if (formatedUuid.equals(p.getUniqueId())) {
                     p.sendMessage(prefix + ChatColor.RED + "You may not punish yourself!");
                     return false;
                 }
-                sendPluginMessage(p, "BungeeCord", "getrep", targetUuid);
+                String targetName = NameFetcher.getName(targetuuid);
+                if (targetName == null){
+                    targetName = args[0];
+                }
+                sendPluginMessage(p, "BungeeCord", "getrep", targetuuid, targetName);
             } else {
                 p.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                 return false;
@@ -76,7 +114,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
         return false;
     }
 
-    private void openGUI(Player p, String targetName) {
+    private void openGUI(Player p, String targetuuid, String targetName) {
         ItemStack shimmer = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 2);
         ItemMeta smeta = shimmer.getItemMeta();
         smeta.addEnchant(Enchantment.DURABILITY, 1, true);
@@ -104,7 +142,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                 itemName = item.getItemMeta().getDisplayName();
                 clicker = p;
                 if (item.getItemMeta().getLore() != null) {
-                    punishmentSelected(targetName, row.getRow(), slot, item.getItemMeta().getLore().toString());
+                    punishmentSelected(targetName, targetuuid, row.getRow(), slot, item.getItemMeta().getLore().toString());
                     return true;
                 }
                 return false;
@@ -180,9 +218,8 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
         }
     }
 
-    private void punishmentSelected(String targetName, int row, int slot, String item) {
+    private void punishmentSelected(String toPunishuuid, String targetName, int row, int slot, String item) {
         menu.close(clicker);
-        String toPunishuuid = UUIDFetcher.getUUID(targetName);
         User user = LuckPerms.getApi().getUser(targetName);
         if (user == null) {
             user = Permissions.giveMeADamnUser(UUIDFetcher.formatUUID(toPunishuuid));
@@ -193,7 +230,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
         ContextManager cm = LuckPerms.getApi().getContextManager();
         Contexts contexts = cm.lookupApplicableContexts(user).orElse(cm.getStaticContexts());
         PermissionData permissionData = user.getCachedData().getPermissionData(contexts);
-        if (!permissionData.getPermissionValue("punisher.bypass").asBoolean() || Permissions.higher(clicker, targetName)) {
+        if (!permissionData.getPermissionValue("punisher.bypass").asBoolean() || Permissions.higher(clicker, toPunishuuid, targetName)) {
             clicker.sendMessage(prefix + ChatColor.GREEN + "Punishing " + targetName + " for: " + itemName + ChatColor.GREEN);
             if (row == 1 && (slot == 2 || slot == 3) && item.contains("Spam, Flood ETC")) {
                 sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Minor Chat Offence");
@@ -280,15 +317,14 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
             String subchannel = in.readUTF();
             if (subchannel.equals("rep")) {
                 double rep;
-                String targetName;
+                String targetuuid = in.readUTF();
+                String targetname = in.readUTF();
                 reputation = new StringBuilder();
                 try {
                     rep = Double.parseDouble(in.readUTF());
-                    targetName = NameFetcher.getName(in.readUTF());
                 } catch (NumberFormatException e) {
-                    targetName = NameFetcher.getName(in.readUTF());
                     reputation.append(ChatColor.WHITE).append("(").append("-").append("/10").append(")");
-                    openGUI(player, targetName);
+                    openGUI(player, targetuuid, targetname);
                     return;
                 }
                 String repString = new DecimalFormat("##.##").format(rep);
@@ -303,7 +339,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                 } else if (rep < -8) {
                     reputation.append(ChatColor.RED).append("(").append(repString).append("/10").append(")");
                 }
-                openGUI(player, targetName);
+                openGUI(player, targetuuid, targetname);
             }
         }
     }

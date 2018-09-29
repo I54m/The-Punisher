@@ -15,41 +15,30 @@ public class NameFetcher {
             uuid = uuid.replace("-", "");
             if (names.containsKey(uuid))
                 return names.get(uuid);
-
             String output = callURL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
-
             StringBuilder result = new StringBuilder();
-
             int i = 0;
-
             while (i < 200) {
                 if (output.length() == 0) {
                     if (names.containsKey(uuid))
                         return names.get(uuid);
-                    return "null";
-
+                    return null;
                 }
-
-                if ((String.valueOf(output.charAt(i)).equalsIgnoreCase("n")) && (String.valueOf(output.charAt(i + 1)).equalsIgnoreCase("a")) && (String.valueOf(output.charAt(i + 2)).equalsIgnoreCase("m")) && (String.valueOf(output.charAt(i + 3)).equalsIgnoreCase("e"))) {
-
+                if ((String.valueOf(output.charAt(i)).equalsIgnoreCase("n"))
+                        && (String.valueOf(output.charAt(i + 1)).equalsIgnoreCase("a"))
+                        && (String.valueOf(output.charAt(i + 2)).equalsIgnoreCase("m"))
+                        && (String.valueOf(output.charAt(i + 3)).equalsIgnoreCase("e"))) {
                     int k = i + 7;
-
                     while (k < 100) {
-
                         if (!String.valueOf(output.charAt(k)).equalsIgnoreCase("\"")) {
-
                             result.append(String.valueOf(output.charAt(k)));
-
                         } else {
                             break;
                         }
-
                         k++;
                     }
-
                     break;
                 }
-
                 i++;
             }
             names.put(uuid, result.toString());
@@ -58,25 +47,20 @@ public class NameFetcher {
 
     private static String callURL(String URL) {
         StringBuilder sb = new StringBuilder();
-        URLConnection urlConn = null;
+        URLConnection urlConn;
         InputStreamReader in = null;
         try {
             URL url = new URL(URL);
             urlConn = url.openConnection();
-
-            if (urlConn != null) urlConn.setReadTimeout(60 * 1000);
-
+            if (urlConn != null) urlConn.setReadTimeout(6000);
             if (urlConn != null && urlConn.getInputStream() != null) {
                 in = new InputStreamReader(urlConn.getInputStream(), Charset.defaultCharset());
                 BufferedReader bufferedReader = new BufferedReader(in);
-
                 if (bufferedReader != null) {
                     int cp;
-
                     while ((cp = bufferedReader.read()) != -1) {
                         sb.append((char) cp);
                     }
-
                     bufferedReader.close();
                 }
             }
@@ -84,7 +68,7 @@ public class NameFetcher {
             in.close();
         } catch (IOException e) {
 
-        }catch (Exception e){
+        } catch (Exception e){
             e.printStackTrace();
         }
         return sb.toString();

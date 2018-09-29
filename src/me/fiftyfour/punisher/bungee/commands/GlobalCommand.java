@@ -23,17 +23,17 @@ public class GlobalCommand extends Command {
         }
         ProxiedPlayer player = (ProxiedPlayer) commandSender;
         if (BungeeMain.CooldownsConfig.contains(player.getUniqueId().toString()) ){
-            Long cooldowntime = BungeeMain.CooldownsConfig.getLong(player.getUniqueId().toString());
+            long cooldowntime = BungeeMain.CooldownsConfig.getLong(player.getUniqueId().toString());
             if (cooldowntime > System.currentTimeMillis() && !player.hasPermission("punisher.cooldowns.override")) {
                 Long cooldownleftmillis = cooldowntime - System.currentTimeMillis();
-                long hoursleft = (long) Math.floor(cooldownleftmillis / (1000 * 60 * 60));
-                long minutesleft = (long) Math.floor(cooldownleftmillis / (1000 * 60) % 60);
-                long secondsleft = (long) Math.floor(cooldownleftmillis / 1000 % 60);
-                if(hoursleft >0){
+                int hoursleft = (int) (cooldownleftmillis / (1000 * 60 * 60));
+                int minutesleft = (int) (cooldownleftmillis / (1000 * 60) % 60);
+                int secondsleft = (int) (cooldownleftmillis / 1000 % 60);
+                if(hoursleft > 0){
                     player.sendMessage(new ComponentBuilder("You have done that recently, please wait: " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s before doing this again!").color(ChatColor.RED).create());
                     return;
                 }else{
-                    if(minutesleft>0) {
+                    if(minutesleft > 0) {
                         player.sendMessage(new ComponentBuilder("You have done that recently, please wait: " + minutesleft + "m " + secondsleft + "s before doing this again!").color(ChatColor.RED).create());
                         return;
                     }else{
@@ -51,7 +51,7 @@ public class GlobalCommand extends Command {
                     sb.append(message).append(" ");
                 ProxyServer.getInstance().broadcast(new ComponentBuilder("[").color(ChatColor.DARK_PURPLE).append(player.getServer().getInfo().getName()).color(ChatColor.LIGHT_PURPLE).bold(true).append("] ").color(ChatColor.DARK_PURPLE).bold(false)
                         .append(player.getName()).color(ChatColor.WHITE).bold(true).append(" » ").color(ChatColor.WHITE).bold(true).append(sb.toString()).color(ChatColor.LIGHT_PURPLE).bold(false).create());
-                Long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
+                long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
                 setcooldowntime = setcooldowntime * 60 * 60 * 1000;
                 setcooldowntime += System.currentTimeMillis();
                 BungeeMain.CooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);
@@ -68,7 +68,7 @@ public class GlobalCommand extends Command {
             sb.append(message).append(" ");
         ProxyServer.getInstance().broadcast(new ComponentBuilder("[").color(ChatColor.DARK_PURPLE).append(player.getServer().getInfo().getName()).color(ChatColor.LIGHT_PURPLE).bold(true).append("] ").color(ChatColor.DARK_PURPLE).bold(false)
                 .append(player.getName()).color(ChatColor.WHITE).bold(true).append(" » ").color(ChatColor.WHITE).bold(true).append(sb.toString()).color(ChatColor.LIGHT_PURPLE).bold(false).create());
-        Long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
+        long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
         setcooldowntime = setcooldowntime * 60 * 60 * 1000;
         setcooldowntime += System.currentTimeMillis();
         BungeeMain.CooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);

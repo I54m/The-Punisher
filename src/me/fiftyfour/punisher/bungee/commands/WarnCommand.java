@@ -49,7 +49,10 @@ public class WarnCommand extends Command {
                 String sql1 = "INSERT INTO `history` (UUID) VALUES ('"+ targetuuid + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
+            stmt.close();
+            results.close();
             String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results2 = stmt2.executeQuery();
@@ -57,7 +60,10 @@ public class WarnCommand extends Command {
                 String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('"+ player.getUniqueId().toString().replace("-", "") + "');";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
+                stmt3.close();
             }
+            stmt2.close();
+            results2.close();
         }catch (SQLException e){
             plugin.mysqlfail(e);
             if (plugin.testConnectionManual())
@@ -81,7 +87,10 @@ public class WarnCommand extends Command {
                 String sql1 = "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + " WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
+            stmt.close();
+            results.close();
             String sql2 = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results1 = stmt2.executeQuery();
@@ -91,14 +100,17 @@ public class WarnCommand extends Command {
                 String sql3 = "UPDATE `history` SET `Manual Punishments`='" + Punishmentno1 + "' WHERE `UUID`='" + targetuuid + "' ;";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
+                stmt3.close();
             }
+            stmt2.close();
+            results1.close();
         }catch (SQLException e){
             plugin.mysqlfail(e);
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
             return;
         }
-        if (!Permissions.higher(player, target.getName())){
+        if (!Permissions.higher(player, targetuuid, target.getName())){
             player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
             return;
         }

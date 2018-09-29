@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.events;
 
+import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.systems.ReputationSystem;
 import net.md_5.bungee.api.ProxyServer;
@@ -11,6 +12,7 @@ import net.md_5.bungee.event.EventHandler;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
 public class onPluginMessage implements Listener {
 
@@ -40,13 +42,18 @@ public class onPluginMessage implements Listener {
                     if (rep == null){
                         rep = "5.0";
                     }
+                    String name = in.readUTF();
                     ProxiedPlayer player = (ProxiedPlayer) e.getReceiver();
                     ByteArrayOutputStream bytestream = new ByteArrayOutputStream();
                     DataOutputStream out = new DataOutputStream(bytestream);
                     out.writeUTF("rep");
                     out.writeUTF(rep);
                     out.writeUTF(uuid);
+                    out.writeUTF(name);
                     player.getServer().sendData("BungeeCord", bytestream.toByteArray());
+                }else if (action.equals("LOG")){
+                    Level level = Level.parse(in.readUTF());
+                    BungeeMain.Logs.log(level, in.readUTF());
                 }
             } catch (IOException IO) {
                 IO.printStackTrace();

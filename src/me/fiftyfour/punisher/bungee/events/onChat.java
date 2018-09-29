@@ -66,12 +66,12 @@ public class onChat implements Listener {
                     StaffChat.sendMessage(player.getName() + " Bypassed their mute, Unmuting...");
                     return;
                 }
-                Long mutetime = results.getLong("Length");
+                long mutetime = results.getLong("Length");
                 Long muteleftmillis = mutetime - System.currentTimeMillis();
-                long daysleft = muteleftmillis / (1000 * 60 * 60 * 24);
-                long hoursleft = (long) Math.floor(muteleftmillis / (1000 * 60 * 60) % 24);
-                long minutesleft = (long) Math.floor(muteleftmillis / (1000 * 60) % 60);
-                long secondsleft = (long) Math.floor(muteleftmillis / 1000 % 60);
+                int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
+                int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
+                int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
+                int secondsleft = (int) (muteleftmillis / 1000 % 60);
                 if (System.currentTimeMillis() > mutetime) {
                     String sql1 = "DELETE FROM `mutes` WHERE `UUID`='" + fetcheduuid + "' ;";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);

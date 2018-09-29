@@ -5,6 +5,7 @@ import me.fiftyfour.punisher.fetchers.NameFetcher;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -13,10 +14,12 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.*;
 
 public class HistoryCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+    private String targetuuid;
 
     public HistoryCommand() {
         super("history", "punisher.history", "hist");
@@ -30,15 +33,46 @@ public class HistoryCommand extends Command {
                 player.sendMessage(new ComponentBuilder(prefix).append("View a player's punishment history").color(ChatColor.RED).append("\nUsage: /history <player name>").color(ChatColor.WHITE).create());
                 return;
             }
-            String targetuuid = UUIDFetcher.getUUID(strings[0]);
-            if (!targetuuid.equals("null")) {
+            ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
+            Future<String> future = null;
+            ExecutorService executorService = null;
+            if (findTarget != null) {
+                targetuuid = findTarget.getUniqueId().toString().replace("-", "");
+            } else {
+                UUIDFetcher uuidFetcher = new UUIDFetcher();
+                uuidFetcher.fetch(strings[0]);
+                executorService = Executors.newSingleThreadExecutor();
+                future = executorService.submit(uuidFetcher);
+            }
+            if (future != null) {
+                try {
+                    targetuuid = future.get(5, TimeUnit.SECONDS);
+                } catch (TimeoutException te) {
+                    player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                    BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
+                    BungeeMain.Logs.severe("Error message: " + te.getMessage());
+                    BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                    executorService.shutdown();
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                    player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                    BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
+                    BungeeMain.Logs.severe("Error message: " + e.getMessage());
+                    BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                    executorService.shutdown();
+                    return;
+                }
+                executorService.shutdown();
+            }
+            if (targetuuid != null) {
                 String targetname = NameFetcher.getName(targetuuid);
-                if (targetname.equalsIgnoreCase("null")) {
+                if (targetname == null) {
                     targetname = strings[0];
                 }
                 try {
-                    Long mutetime;
-                    Long bantime;
                     String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
                     PreparedStatement stmt = plugin.connection.prepareStatement(sql);
                     ResultSet results = stmt.executeQuery();
@@ -51,23 +85,23 @@ public class HistoryCommand extends Command {
                         ResultSet results2 = stmt2.executeQuery();
                         TextComponent status;
                         if (results2.next()) {
-                            bantime = results2.getLong("Length");
+                            Long bantime = results2.getLong("Length");
                             Long banleftmillis = bantime - System.currentTimeMillis();
-                            long daysleft = banleftmillis / (1000 * 60 * 60 * 24);
-                            long hoursleft = (long) Math.floor(banleftmillis / (1000 * 60 * 60) % 24);
-                            long minutesleft = (long) Math.floor(banleftmillis / (1000 * 60) % 60);
-                            long secondsleft = (long) Math.floor(banleftmillis / 1000 % 60);
+                            int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
+                            int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
+                            int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
+                            int secondsleft = (int) (banleftmillis / 1000 % 60);
                             String reason = results2.getString("Reason");
                             String punisher = results2.getString("Punisher");
                             status = new TextComponent("banned for " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s. Reason: " + reason + " by: " + punisher);
                             status.setColor(ChatColor.RED);
                         } else if (results1.next()) {
-                            mutetime = results1.getLong("Length");
+                            Long mutetime = results1.getLong("Length");
                             Long muteleftmillis = mutetime - System.currentTimeMillis();
-                            long daysleft = muteleftmillis / (1000 * 60 * 60 * 24);
-                            long hoursleft = (long) Math.floor(muteleftmillis / (1000 * 60 * 60) % 24);
-                            long minutesleft = (long) Math.floor(muteleftmillis / (1000 * 60) % 60);
-                            long secondsleft = (long) Math.floor(muteleftmillis / 1000 % 60);
+                            int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
+                            int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
+                            int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
+                            int secondsleft = (int) (muteleftmillis / 1000 % 60);
                             String reason = results1.getString("Reason");
                             String punisher = results1.getString("Punisher");
                             status = new TextComponent("Muted for " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s. Reason: " + reason + " by: " + punisher);
@@ -76,6 +110,8 @@ public class HistoryCommand extends Command {
                             status = new TextComponent("No currently active punishments!");
                             status.setColor(ChatColor.GREEN);
                         }
+                        stmt1.close();
+                        stmt2.close();
                         player.sendMessage(new ComponentBuilder("|-------------").color(ChatColor.GREEN).strikethrough(true).append("History for: " + targetname).color(ChatColor.RED).strikethrough(false)
                                 .append("-------------|").color(ChatColor.GREEN).strikethrough(true).create());
                         if (results.getInt("Minor Chat Offence") != 0) player.sendMessage(new ComponentBuilder("Been Punished for Minor Chat Offence: ").color(ChatColor.GREEN).append(String.valueOf(results.getInt("Minor Chat Offence"))).color(ChatColor.RED).create());
@@ -98,6 +134,8 @@ public class HistoryCommand extends Command {
                     } else {
                         player.sendMessage(new ComponentBuilder(prefix).append(targetname + " has not been punished yet!").color(ChatColor.RED).create());
                     }
+                    stmt.close();
+                    results.close();
                 } catch (SQLException e) {
                     plugin.mysqlfail(e);
                     if (plugin.testConnectionManual())

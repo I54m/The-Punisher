@@ -1,18 +1,23 @@
 package me.fiftyfour.punisher.bungee.commands;
 
+import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.systems.ReputationSystem;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.util.concurrent.*;
+
 public class ReputationCommand extends Command {
 
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+    private String uuid;
 
     public ReputationCommand() {
         super("reputation", "punisher.reputation", "rep");
@@ -29,11 +34,47 @@ public class ReputationCommand extends Command {
             player.sendMessage(new ComponentBuilder(prefix).append("Add/Minus/Set a player's reputation score").color(ChatColor.RED).append("\nUsage: /reputation <player> <add|minus|set> <amount>").color(ChatColor.WHITE).create());
             return;
         }
-        String uuid = UUIDFetcher.getUUID(strings[0]);
-        String name = NameFetcher.getName(uuid);
-        if (uuid.equals("null")) {
+        ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
+        Future<String> future = null;
+        ExecutorService executorService = null;
+        if (findTarget != null){
+            uuid = findTarget.getUniqueId().toString().replace("-", "");
+        }else {
+            UUIDFetcher uuidFetcher = new UUIDFetcher();
+            uuidFetcher.fetch(strings[0]);
+            executorService = Executors.newSingleThreadExecutor();
+            future = executorService.submit(uuidFetcher);
+        }
+        if (future != null) {
+            try {
+                uuid = future.get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException te) {
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
+                BungeeMain.Logs.severe("Error message: " + te.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
+                BungeeMain.Logs.severe("Error message: " + e.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            }
+            executorService.shutdown();
+        }
+        if (uuid == null) {
             player.sendMessage(new ComponentBuilder(prefix).append("That is not a player's name!").color(ChatColor.RED).create());
             return;
+        }
+        String name = NameFetcher.getName(uuid);
+        if (name == null){
+            name = strings[0];
         }
         if (strings[1].equalsIgnoreCase("add")) {
             try {

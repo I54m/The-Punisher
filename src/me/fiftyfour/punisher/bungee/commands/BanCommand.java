@@ -17,11 +17,14 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.*;
 
 public class BanCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
     private long length;
+    private String targetname;
+    private String targetuuid;
 
     public BanCommand() {
         super("ban", "punisher.ban", "tempban", "ipban", "banip");
@@ -29,6 +32,7 @@ public class BanCommand extends Command {
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
+        long starttime = System.nanoTime();
         if (!(commandSender instanceof ProxiedPlayer)) {
             commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             return;
@@ -38,41 +42,16 @@ public class BanCommand extends Command {
             player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
-        String targetuuid = UUIDFetcher.getUUID(strings[0]);
-        if (targetuuid.equalsIgnoreCase("null")) {
-            player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
-            return;
-        }
-        String targetname = NameFetcher.getName(targetuuid);
-        if (targetname.equalsIgnoreCase("null")) {
-            targetname = strings[0];
-        }
-        if (!Permissions.higher(player, targetname)){
-            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
-            return;
-        }
-        try {
-            String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
-            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
-            ResultSet results = stmt.executeQuery();
-            if (!results.next()) {
-                String sql1 = "INSERT INTO `history` (UUID) VALUES ('"+ targetuuid + "');";
-                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                stmt1.executeUpdate();
-            }
-            String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
-            PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
-            ResultSet results2 = stmt2.executeQuery();
-            if (!results2.next()) {
-                String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('"+ player.getUniqueId().toString().replace("-", "") + "');";
-                PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
-                stmt3.executeUpdate();
-            }
-        }catch (SQLException e){
-            plugin.mysqlfail(e);
-            if (plugin.testConnectionManual())
-                this.execute(commandSender, strings);
-            return;
+        ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
+        Future<String> future = null;
+        ExecutorService executorService = null;
+        if (findTarget != null){
+            targetuuid = findTarget.getUniqueId().toString().replace("-", "");
+        }else {
+            UUIDFetcher uuidFetcher = new UUIDFetcher();
+            uuidFetcher.fetch(strings[0]);
+            executorService = Executors.newSingleThreadExecutor();
+            future = executorService.submit(uuidFetcher);
         }
         boolean duration;
         try {
@@ -97,10 +76,10 @@ public class BanCommand extends Command {
             } else if (strings[1].toLowerCase().endsWith("s")) {
                 length = 1000 * (long) Integer.parseInt(strings[1].replace("s", ""));
                 duration = true;
-            }else {
+            } else {
                 duration = false;
             }
-        }catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             player.sendMessage(new ComponentBuilder(prefix).append(strings[1] + " is not a valid duration!").color(ChatColor.RED).create());
             player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
@@ -115,10 +94,83 @@ public class BanCommand extends Command {
                 reason.append(strings[i]).append(" ");
             }
             length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
-        }else {
+        } else {
             reason.append("Manually Banned");
         }
+        try{
+            String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
+            PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
+            ResultSet results2 = stmt2.executeQuery();
+            if (!results2.next()) {
+                String sql3 = "INSERT INTO `staffhistory` (UUID) VALUES ('" + player.getUniqueId().toString().replace("-", "") + "');";
+                PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
+                stmt3.executeUpdate();
+                stmt3.close();
+            }
+            stmt2.close();
+            results2.close();
+        }catch (SQLException sqle){
+            plugin.mysqlfail(sqle);
+            if (plugin.testConnectionManual())
+                execute(commandSender, strings);
+        }
         String reasonString = reason.toString().replace("\"", "'");
+        if (future != null && targetuuid == null) {
+            try {
+                targetuuid = future.get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException te) {
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
+                BungeeMain.Logs.severe("Error message: " + te.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
+                BungeeMain.Logs.severe("Error message: " + e.getMessage());
+                BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                executorService.shutdown();
+                return;
+            }
+            executorService.shutdown();
+        }else return;
+        if (targetuuid == null) {
+            player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
+            return;
+        }
+        if (findTarget == null) {
+            targetname = NameFetcher.getName(targetuuid);
+            if (targetname == null) {
+                targetname = strings[0];
+            }
+        } else {
+            targetname = findTarget.getName();
+        }
+        if (!Permissions.higher(player, targetuuid, targetname)) {
+            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+            return;
+        }
+        try {
+            String sql = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
+            PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+            ResultSet results = stmt.executeQuery();
+            if (!results.next()) {
+                String sql1 = "INSERT INTO `history` (UUID) VALUES ('" + targetuuid + "');";
+                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                stmt1.executeUpdate();
+                stmt.close();
+            }
+            stmt.close();
+            results.close();
+        } catch (SQLException e) {
+            plugin.mysqlfail(e);
+            if (plugin.testConnectionManual())
+                execute(commandSender, strings);
+        }
         try {
             String sql = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
@@ -129,7 +181,10 @@ public class BanCommand extends Command {
                 String sql1 = "UPDATE `staffhistory` SET `Manual Punishments`=" + Punishmentno + " WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
+            stmt.close();
+            results.close();
             String sql2 = "SELECT * FROM `history` WHERE UUID='" + targetuuid + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results1 = stmt2.executeQuery();
@@ -139,60 +194,77 @@ public class BanCommand extends Command {
                 String sql3 = "UPDATE `history` SET `Manual Punishments`='" + Punishmentno1 + "' WHERE `UUID`='" + targetuuid + "' ;";
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
+                stmt3.close();
             }
-        }catch (SQLException e){
+            stmt2.close();
+            results1.close();
+        } catch (SQLException e) {
             plugin.mysqlfail(e);
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
             return;
         }
+        player.sendMessage(new TextComponent(targetuuid));
+        player.sendMessage(new TextComponent(player.getUniqueId().toString().replace("-", "")));
+        Long banleftmillis = length;
+        int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
+        int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
+        int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
+        int secondsleft = (int) (banleftmillis / 1000 % 60);
+        ProxyServer.getInstance().getScheduler().runAsync(plugin, new Runnable() {
+            @Override
+            public void run() {
+                ProxiedPlayer target = ProxyServer.getInstance().getPlayer(UUIDFetcher.formatUUID(targetuuid));
+                if (target != null && target.isConnected()) {
+                    plugin.getLogger().info("target is not null?");
+                    if (daysleft > 500) {
+                        String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
+                                .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                                .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
+                        plugin.getLogger().info(banMessage);
+                        target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
+                    } else {
+                        String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
+                                .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                                .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
+                        target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
+                    }
+                }
+                StaffChat.sendMessage(player.getName() + " Banned: " + targetname + " for: " + reason);
+                if (daysleft > 500)
+                    StaffChat.sendMessage("This ban is permanent and does not expire!");
+                else
+                    StaffChat.sendMessage("This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
+                ReputationSystem.minusRep(targetname, targetuuid, 4);
+            }
+        });
         try {
             String sql = "SELECT * FROM `bans` WHERE UUID='" + targetuuid + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
             if (!results.next()) {
-                String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('"+ targetuuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', \"" + reasonString + "\", '" + player.getName() + "');";
+                String sql1 = "INSERT INTO `bans` (`UUID`, `Name`, `Length`, `Reason`, `Punisher`) VALUES ('" + targetuuid + "', '" + targetname + "', '" + (length + System.currentTimeMillis()) + "', \"" + reasonString + "\", '" + player.getName() + "');";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
-            }else{
+                stmt1.close();
+            } else {
                 String sql1 = "UPDATE `bans` SET `UUID`='" + targetuuid + "', `Name`='" + targetname + "', `Length`='" + (length + System.currentTimeMillis()) + "', `Reason`=\"" + reasonString + "\", `Punisher`='" + player.getName() + "' WHERE `UUID`='" + targetuuid + "';";
                 PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                 stmt1.executeUpdate();
+                stmt1.close();
             }
-        }catch (SQLException e){
+            stmt.close();
+            results.close();
+        } catch (SQLException e) {
             plugin.mysqlfail(e);
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
             return;
         }
-        ProxiedPlayer target = ProxyServer.getInstance().getPlayer(targetname);
-
-        Long banleftmillis = length;
-        long daysleft =  banleftmillis / (1000 * 60 * 60 * 24);
-        long hoursleft = (long) Math.floor(banleftmillis / (1000 * 60 * 60) % 24);
-        long minutesleft = (long) Math.floor(banleftmillis / (1000 * 60) % 60);
-        long secondsleft = (long) Math.floor(banleftmillis / 1000 % 60);
-        if (target != null) {
-            if (daysleft > 500) {
-                String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
-                        .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
-                        .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
-
-                target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
-            } else {
-                String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
-                        .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
-                        .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
-
-                target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
-            }
-        }
-        StaffChat.sendMessage(player.getName() + " Banned: " + targetname + " for: " + reason);
-        if (daysleft > 500)
-            StaffChat.sendMessage("This ban is permanent and does not expire!");
-        else
-            StaffChat.sendMessage("This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
-        ReputationSystem.minusRep(targetname, targetuuid, 4);
         BungeeMain.Logs.info(targetname + " Was Banned for: " + reason + " by: " + player.getName());
+        player.sendMessage(new TextComponent("done"));
+        long endtime = System.nanoTime();
+        long durationtime = endtime - starttime;
+        player.sendMessage(new TextComponent("took " + (durationtime / 1000000) + "ms"));
     }
 }

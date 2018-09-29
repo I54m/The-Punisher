@@ -42,21 +42,6 @@ public class onServerConnect implements Listener {
             BungeeMain.RepStorage.set(fetcheduuid, 5.0);
         }
         try {
-            String sqlip = "SELECT * FROM `iplist` WHERE UUID='" + fetcheduuid + "'";
-            PreparedStatement stmtip = plugin.connection.prepareStatement(sqlip);
-            ResultSet resultsip = stmtip.executeQuery();
-            if (resultsip.next()){
-                if (!resultsip.getString("ip").equals(player.getAddress().getHostString())){
-                    String oldip = resultsip.getString("ip");
-                    String sqlipadd = "UPDATE `iplist` SET `ip`='" + player.getAddress().getHostString() + "' WHERE `ip`='" + oldip + "' ;";
-                    PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
-                    stmtipadd.executeUpdate();
-                }
-            }else{
-                String sql1 = "INSERT INTO `iplist` (`UUID`, `ip`) VALUES ('"+ fetcheduuid + "', '" + player.getAddress().getHostString() + "');";
-                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                stmt1.executeUpdate();
-            }
             String sql = "SELECT * FROM `bans` WHERE UUID='" + fetcheduuid + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             results = stmt.executeQuery();
@@ -65,15 +50,17 @@ public class onServerConnect implements Listener {
                     String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                     stmt1.executeUpdate();
+                    stmt1.close();
                     BungeeMain.Logs.info(player.getName() + " Bypassed their ban and were unbanned");
                     StaffChat.sendMessage(player.getName() + " Bypassed their ban, Unbanning...");
                     return;
                 }
-                Long bantime = results.getLong("Length");
+                long bantime = results.getLong("Length");
                 if (System.currentTimeMillis() > bantime) {
                     String sql1 = "DELETE FROM `bans` WHERE `UUID`='" + fetcheduuid + "' ;";
                     PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
                     stmt1.executeUpdate();
+                    stmt1.close();
                     BungeeMain.Logs.info(player.getName() + "'s ban expired so they were unbanned");
                 } else {
                     event.setCancelled(true);
@@ -81,29 +68,65 @@ public class onServerConnect implements Listener {
                     return;
                 }
             }
-            String ip = player.getAddress().getHostString();
-            String sqlip1 = "SELECT * FROM `iplist` WHERE ip='" + ip + "'";
-            PreparedStatement stmtip1 = plugin.connection.prepareStatement(sqlip1);
-            ResultSet resultsip1 = stmtip1.executeQuery();
-            while(resultsip1.next()) {
-                String concacc = resultsip1.getString("uuid");
-                altslist.add(concacc);
-            }
-            altslist.remove(player.getUniqueId().toString().replace("-", ""));
-            if (!altslist.isEmpty()){
-                ArrayList<String> bannedalts = new ArrayList<>();
-                for (String alts : altslist){
-                    String sql1 = "SELECT * FROM `bans` WHERE UUID='" + alts + "'";
-                    PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                    ResultSet results1 = stmt1.executeQuery();
-                    if (results1.next()){
-                        bannedalts.add(NameFetcher.getName(results1.getString("uuid")));
+            stmt.close();
+            results.close();
+            plugin.getProxy().getScheduler().runAsync(plugin, new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        //update ip and make sure there is one in the database
+                        String sqlip = "SELECT * FROM `iplist` WHERE UUID='" + fetcheduuid + "'";
+                        PreparedStatement stmtip = plugin.connection.prepareStatement(sqlip);
+                        ResultSet resultsip = stmtip.executeQuery();
+                        if (resultsip.next()){
+                            if (!resultsip.getString("ip").equals(player.getAddress().getHostString())){
+                                String oldip = resultsip.getString("ip");
+                                String sqlipadd = "UPDATE `iplist` SET `ip`='" + player.getAddress().getHostString() + "' WHERE `ip`='" + oldip + "' ;";
+                                PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
+                                stmtipadd.executeUpdate();
+                                stmtipadd.close();
+                            }
+                        }else{
+                            String sql1 = "INSERT INTO `iplist` (`UUID`, `ip`) VALUES ('"+ fetcheduuid + "', '" + player.getAddress().getHostString() + "');";
+                            PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                            stmt1.executeUpdate();
+                            stmt1.close();
+                        }
+                        stmtip.close();
+                        resultsip.close();
+                        //check for banned alts
+                        String ip = player.getAddress().getHostString();
+                        String sqlip1 = "SELECT * FROM `iplist` WHERE ip='" + ip + "'";
+                        PreparedStatement stmtip1 = plugin.connection.prepareStatement(sqlip1);
+                        ResultSet resultsip1 = stmtip1.executeQuery();
+                        while (resultsip1.next()) {
+                            String concacc = resultsip1.getString("uuid");
+                            altslist.add(concacc);
+                        }
+                        stmtip1.close();
+                        resultsip1.close();
+                        altslist.remove(player.getUniqueId().toString().replace("-", ""));
+                        if (!altslist.isEmpty()) {
+                            ArrayList<String> bannedalts = new ArrayList<>();
+                            for (String alts : altslist) {
+                                String sql1 = "SELECT * FROM `bans` WHERE UUID='" + alts + "'";
+                                PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                                ResultSet results1 = stmt1.executeQuery();
+                                if (results1.next()) {
+                                    bannedalts.add(NameFetcher.getName(results1.getString("uuid")));
+                                }
+                                stmt1.close();
+                                results1.close();
+                            }
+                            if (!bannedalts.isEmpty()) {
+                                StaffChat.sendMessage(player.getName() + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", ""));
+                            }
+                        }
+                    }catch (SQLException e){
+                        plugin.mysqlfail(e);
                     }
                 }
-                if (!bannedalts.isEmpty()){
-                    StaffChat.sendMessage(player.getName() + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", ""));
-                }
-            }
+            });
         } catch (SQLException e) {
             plugin.mysqlfail(e);
             if(plugin.testConnectionManual())
@@ -115,10 +138,10 @@ public class onServerConnect implements Listener {
         try {
             Long bantime = results.getLong("Length");
             Long banleftmillis = bantime - System.currentTimeMillis();
-            long daysleft = banleftmillis / (1000 * 60 * 60 * 24);
-            long hoursleft = (long) Math.floor(banleftmillis / (1000 * 60 * 60) % 24);
-            long minutesleft = (long) Math.floor(banleftmillis / (1000 * 60) % 60);
-            long secondsleft = (long) Math.floor(banleftmillis / 1000 % 60);
+            int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
+            int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
+            int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
+            int secondsleft = (int) (banleftmillis / 1000 % 60);
             String reason = results.getString("Reason");
             if (daysleft > 500) {
                 String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))

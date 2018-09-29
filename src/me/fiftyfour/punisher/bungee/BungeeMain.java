@@ -1,6 +1,7 @@
 package me.fiftyfour.punisher.bungee;
 
 import com.google.common.io.ByteStreams;
+import com.zaxxer.hikari.HikariDataSource;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.bungee.commands.*;
@@ -20,7 +21,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -29,7 +29,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.*;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 public class BungeeMain extends Plugin implements Listener {
 //setup variables
@@ -51,6 +54,7 @@ public class BungeeMain extends Plugin implements Listener {
     private static void setInstance(BungeeMain instance) {
         BungeeMain.instance = instance;
     }
+    private HikariDataSource hikari;
 
     @Override
     public void onEnable() {
@@ -150,6 +154,15 @@ public class BungeeMain extends Plugin implements Listener {
         password = PunisherConfig.getString("MySQL.password");
         port = PunisherConfig.getInt("MySQL.port");
         extraArguments = PunisherConfig.getString("MySQL.extraArguments");
+        hikari = new HikariDataSource();
+        hikari.addDataSourceProperty("serverName", host);
+        hikari.addDataSourceProperty("port", port);
+        hikari.setPassword(password);
+        hikari.setUsername(username);
+        hikari.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.extraArguments);
+        hikari.setPoolName("The Punisher-hikari");
+        hikari.setMaximumPoolSize(10);
+        hikari.setMinimumIdle(10);
         try {
             openConnection();
         } catch (SQLException e) {
@@ -164,8 +177,8 @@ public class BungeeMain extends Plugin implements Listener {
     public void onDisable() {
         Logs.info("****END OF LOGS ENDING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
         try {
-            if (connection!=null && !connection.isClosed())
-                connection.close();
+            if (hikari!=null && !hikari.isClosed())
+                hikari.close();
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -282,16 +295,13 @@ public class BungeeMain extends Plugin implements Listener {
         }
     }
     private void openConnection() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
+        if (connection != null && !connection.isClosed() || hikari == null)
             return;
-        }
-        synchronized (this) {
-            if (connection != null && !connection.isClosed()) {
-                return;
-            }
-            connection = DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.extraArguments, this.username, this.password);
-            getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connected to server: " + host + ":" + port + " with user: " + username + "!");
-        }
+        connection = hikari.getConnection();
+        getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connected to server: " + host + ":" + port + " with user: " + username + "!");
+    }
+    public HikariDataSource getHikari(){
+        return hikari;
     }
     public void setupmysql(){
         try {
@@ -323,14 +333,20 @@ public class BungeeMain extends Plugin implements Listener {
             PreparedStatement stmt5 = connection.prepareStatement(ip);
             PreparedStatement stmt6 = connection.prepareStatement(usedb);
             stmt.executeUpdate();
+            stmt.close();
             getLogger().info(prefix + ChatColor.GREEN + database + " Database Created!");
             stmt1.executeUpdate();
+            stmt1.close();
             stmt2.executeUpdate();
+            stmt2.close();
             stmt3.executeUpdate();
+            stmt3.close();
             stmt4.executeUpdate();
+            stmt4.close();
             stmt5.executeUpdate();
             getLogger().info(prefix + ChatColor.GREEN + "Tables Created!");
             stmt6.executeUpdate();
+            stmt6.close();
             getLogger().info(prefix + ChatColor.GREEN + "Database Set to: " + database);
             getLogger().info(prefix + ChatColor.GREEN + "MYSQL setup!");
             getLogger().info("");
@@ -354,6 +370,7 @@ public class BungeeMain extends Plugin implements Listener {
                 if (!testConnectionManual()){
                     getProxy().getPluginManager().unregisterListeners(getInstance());
                     getProxy().getPluginManager().unregisterCommands(getInstance());
+                    getLogger().severe(prefix + ChatColor.RED + "Plugin disabled!");
                 }
             }
         }, 1, 60, TimeUnit.MINUTES);
