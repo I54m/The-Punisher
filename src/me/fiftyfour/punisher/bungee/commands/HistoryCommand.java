@@ -46,22 +46,29 @@ public class HistoryCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(5, TimeUnit.SECONDS);
+                    targetuuid = future.get(10, TimeUnit.SECONDS);
                 } catch (TimeoutException te) {
                     player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
                     player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
                     BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
                     BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                    BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                    StringBuilder stacktrace = new StringBuilder();
+                    for (StackTraceElement stackTraceElement : te.getStackTrace()){
+                        stacktrace.append(stackTraceElement.toString()).append("\n");
+                    }
+                    BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                     executorService.shutdown();
                     return;
                 } catch (Exception e) {
-                    e.printStackTrace();
                     player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
                     player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
                     BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
                     BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                    BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                    StringBuilder stacktrace = new StringBuilder();
+                    for (StackTraceElement stackTraceElement : e.getStackTrace()){
+                        stacktrace.append(stackTraceElement.toString()).append("\n");
+                    }
+                    BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                     executorService.shutdown();
                     return;
                 }

@@ -42,6 +42,9 @@ public class UUIDFetcher implements Callable<String> {
         }
         if (in != null)
             in.close();
+        if (sb == new StringBuilder() || sb.toString().length() < 7){
+            return null;
+        }
         StringBuilder result = new StringBuilder();
         int k = 7;
         while (k < 100) {
