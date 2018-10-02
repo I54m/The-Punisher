@@ -59,12 +59,17 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                     p.sendMessage(ChatColor.RED + "Please provide a player's name!");
                     return false;
                 }
-                String targetuuid;
+                String targetuuid = null;
                 Player findTarget = Bukkit.getPlayer(args[0]);
                 Future<String> future = null;
                 ExecutorService executorService = null;
                 if (findTarget != null){
                     targetuuid = findTarget.getUniqueId().toString().replace("-", "");
+                    UUID formatedUuid = UUIDFetcher.formatUUID(targetuuid);
+                    if (formatedUuid.equals(p.getUniqueId())) {
+                        p.sendMessage(prefix + ChatColor.RED + "You may not punish yourself!");
+                        return false;
+                    }
                 }else {
                     UUIDFetcher uuidFetcher = new UUIDFetcher();
                     uuidFetcher.fetch(args[0]);
@@ -76,29 +81,33 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                         targetuuid = future.get(10, TimeUnit.SECONDS);
                     } catch (TimeoutException te) {
                         p.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Connection to mojang API took too long! Unable to fetch " + args[0] + "'s uuid!");
-                        p.sendMessage(prefix + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+                        p.sendMessage(prefix + ChatColor.RED + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Connection to mojang API took too long! Unable to fetch " + args[0] + "'s uuid!");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + te.getMessage());
-                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + te.getStackTrace().toString());
+                        StringBuilder stacktrace = new StringBuilder();
+                        for (StackTraceElement stackTraceElement : te.getStackTrace()){
+                            stacktrace.append(stackTraceElement.toString()).append("\n");
+                        }
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
                         executorService.shutdown();
                         return false;
                     } catch (Exception e) {
                         p.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Unexpected Error while setting up GUI! Unable to fetch " + args[0] + "'s uuid!");
-                        p.sendMessage(prefix + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+                        p.sendMessage(prefix + ChatColor.RED + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Unexpected error while setting up GUI! Unable to fetch " + args[0] + "'s uuid!");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + e.getMessage());
-                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace" + e.getStackTrace().toString());
+                        StringBuilder stacktrace = new StringBuilder();
+                        for (StackTraceElement stackTraceElement : e.getStackTrace()){
+                            stacktrace.append(stackTraceElement.toString()).append("\n");
+                        }
+                        sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
+                        executorService.shutdown();
                         return false;
                     }
                     executorService.shutdown();
-                }else return false;
+                }
                 if (targetuuid == null) {
                     p.sendMessage(ChatColor.RED + "That is not a player's name!");
-                    return false;
-                }
-                UUID formatedUuid = UUIDFetcher.formatUUID(targetuuid);
-                if (formatedUuid.equals(p.getUniqueId())) {
-                    p.sendMessage(prefix + ChatColor.RED + "You may not punish yourself!");
                     return false;
                 }
                 String targetName = NameFetcher.getName(targetuuid);
