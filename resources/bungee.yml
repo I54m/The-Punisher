@@ -1,10 +1,10 @@
 name: The-Punisher
 author: 54mpenguin
 website: https://54mpenguin.com
-version: 1.3.2
+version: 1.4
 main: me.fiftyfour.punisher.bungee.BungeeMain
 depend: [LuckPerms]
-
+description: The Bunggecord side of the Punisher plugin.
 
 ###################################################################################### Commands ###########################################################################################################
 
