@@ -25,6 +25,37 @@ public class BukkitMain extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        //Check if version of mc is compatible
+        if (this.getServer().getVersion().contains("1.13")){
+            getLogger().severe("This version of the punisher is not compatible with minecraft 1.13.x");
+            getLogger().severe("Due to major data changes in 1.13 there are items in the gui that no longer work");
+            getLogger().severe("Please downgrade to 1.12.2 to get this version to work!");
+            getLogger().severe("Other compatible versions include: 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+            getLogger().severe("Plugin Disabled!");
+            this.setEnabled(false);
+            return;
+        }else if (!this.getServer().getVersion().contains("1.12") && !this.getServer().getVersion().contains("1.11") && !this.getServer().getVersion().contains("1.10")
+        && !this.getServer().getVersion().contains("1.9") && !this.getServer().getVersion().contains("1.8")){
+            getLogger().severe("This version of the punisher is not compatible with minecraft " + this.getServer().getVersion());
+            getLogger().severe("Due to items that are not available in this version there are items in the gui that no longer work");
+            getLogger().severe("Please upgrade to 1.8.8 to get this version to work!");
+            getLogger().severe("Other compatible versions include: 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+            getLogger().severe("Plugin Disabled!");
+            this.setEnabled(false);
+            return;
+        }
+        //check for dependencies
+        try {
+            if (Bukkit.getServicesManager().getRegistration(LuckPermsApi.class) == null) {
+                getLogger().severe("Luck Perms not detected, Plugin has been Disabled!");
+                this.setEnabled(false);
+                return;
+            }
+        }catch(Exception e){
+            getLogger().severe("Luck Perms not detected, Plugin has been Disabled!");
+            this.setEnabled(false);
+            return;
+        }
         //BETA warning
         if (this.getDescription().getVersion().contains("BETA"))
             getServer().getConsoleSender().sendMessage(ChatColor.RED + "Warning: This is a beta version and some systems may be disabled or not function as intended!");
@@ -39,11 +70,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
         //register plugin message channels
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PunishGUI());
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-        //check for dependencies
-        if (Bukkit.getServicesManager().getRegistration(LuckPermsApi.class) == null){
-            getLogger().warning("Luck Perms not detected, Plugin has been Disabled!");
-            this.setEnabled(false);
-        }
+        //check for updates
         getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Checking for updates...");
         try {
             if (UpdateChecker.getCurrentVersion() == null) {

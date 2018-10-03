@@ -38,6 +38,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
     private IconMenu menu;
     private StringBuilder reputation;
+    private BukkitMain plugin = BukkitMain.getInstance();
 
     private static void sendPluginMessage(@NotNull Player player, String channel, @NotNull String... messages) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -180,7 +181,10 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
             menu.addButton(12, new ItemStack(Material.NETHERRACK, 1), ChatColor.RED + "Major Chat Offence", ChatColor.WHITE + "Racism, Disrespect ETC");
             menu.addButton(13, Iron_Boots, ChatColor.RED + "DDoS/DoX Threats", ChatColor.WHITE + "Includes Hinting At It and", ChatColor.WHITE + "Saying They Have a Player's DoX");
             menu.addButton(14, new ItemStack(Material.BOOK_AND_QUILL, 1), ChatColor.RED + "Inappropriate Link", ChatColor.WHITE + "Includes Pm's");
-            menu.addButton(15, new ItemStack(Material.SKULL_ITEM, 1, (short) 5), ChatColor.RED + "Scamming", ChatColor.WHITE + "When a player is unfairly taking a player's money", ChatColor.WHITE + "Through a fake scheme");
+            if(plugin.getServer().getVersion().contains("1.8"))
+                menu.addButton(15, new ItemStack(Material.SKULL_ITEM, 1, (short) 1), ChatColor.RED + "Scamming", ChatColor.WHITE + "When a player is unfairly taking a player's money", ChatColor.WHITE + "Through a fake scheme");
+            else
+                menu.addButton(15, new ItemStack(Material.SKULL_ITEM, 1, (short) 5), ChatColor.RED + "Scamming", ChatColor.WHITE + "When a player is unfairly taking a player's money", ChatColor.WHITE + "Through a fake scheme");
             if (p.hasPermission("punisher.punish.level.2")) {
                 menu.setSize(4);
                 menu.addButton(18, new ItemStack(Material.GLASS, 1), ChatColor.RED + "X-Raying", ChatColor.WHITE + "Mining Straight to Ores/Bases/Chests", ChatColor.WHITE + "Includes Chest Esp and Player Esp");
@@ -190,7 +194,10 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                 menu.addButton(22, Iron_Sword, ChatColor.RED + "Disallowed Mods", ChatColor.WHITE + "Includes Hacks Such as Derp and Headless");
                 menu.addButton(23, new ItemStack(Material.TNT, 1), ChatColor.RED + "Greifing", ChatColor.WHITE + "Excludes Cobble Monstering and Bypassing land claims", ChatColor.WHITE + "Includes Things Such as 'lava curtaining' and TnT Cannoning");
                 menu.addButton(24, new ItemStack(Material.SIGN, 1), ChatColor.RED + "Server Advertisment", ChatColor.RED + "Warning: Must Also Clear Chat After you have proof!!");
-                menu.addButton(25, new ItemStack(Material.PURPLE_SHULKER_BOX, 1), ChatColor.RED + "Exploiting", ChatColor.WHITE + "Includes Bypassing Land Claims and Cobble Monstering");
+                if (plugin.getServer().getVersion().contains("1.10") || plugin.getServer().getVersion().contains("1.9"))
+                    menu.addButton(25, new ItemStack(Material.FURNACE, 1), ChatColor.RED + "Exploiting", ChatColor.WHITE + "Includes Bypassing Land Claims and Cobble Monstering");
+                else
+                    menu.addButton(25, new ItemStack(Material.PURPLE_SHULKER_BOX, 1), ChatColor.RED + "Exploiting", ChatColor.WHITE + "Includes Bypassing Land Claims and Cobble Monstering");
                 menu.addButton(26, new ItemStack(Material.IRON_TRAPDOOR, 1), ChatColor.RED + "TPA-Trapping", ChatColor.WHITE + "Sending a TPA Request to Someone", ChatColor.WHITE + "and Then Killing Them Once They Tp");
                 menu.addButton(27, shimmer, " ");
                 menu.addButton(28, shimmer, " ");
