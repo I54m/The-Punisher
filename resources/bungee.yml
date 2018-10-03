@@ -4,7 +4,7 @@ website: https://54mpenguin.com
 version: 1.4
 main: me.fiftyfour.punisher.bungee.BungeeMain
 depend: [LuckPerms]
-description: The Bunggecord side of the Punisher plugin.
+description: The Bungeecord side of the Punisher plugin.
 
 ###################################################################################### Commands ###########################################################################################################
 
