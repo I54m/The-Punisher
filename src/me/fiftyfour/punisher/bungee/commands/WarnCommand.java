@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
+import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.systems.Permissions;
@@ -12,6 +13,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +23,7 @@ import java.sql.SQLException;
 public class WarnCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+    private int sqlfails = 0;
 
     public WarnCommand() {
         super("warn", "punisher.warn");
@@ -65,10 +70,20 @@ public class WarnCommand extends Command {
             stmt2.close();
             results2.close();
         }catch (SQLException e){
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         StringBuilder sb = new StringBuilder();
         if (strings.length == 1) {
@@ -105,17 +120,36 @@ public class WarnCommand extends Command {
             stmt2.close();
             results1.close();
         }catch (SQLException e){
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         if (!Permissions.higher(player, targetuuid, target.getName())){
             player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
             return;
         }
         StaffChat.sendMessage(player.getName() + " Warned: " + target.getName() + " for: " + sb.toString());
-        ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).fadeIn(5).stay(100).fadeOut(5).send(target);
+        try {
+            ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outbytes);
+            out.writeUTF("Punisher");
+            out.writeUTF("PlayPunishSound");
+            player.getServer().sendData("BungeeCord", outbytes.toByteArray());
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+        }
+        ProxyServer.getInstance().createTitle().title(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).subTitle(new TextComponent(ChatColor.RED + "Reason: " + sb.toString())).fadeIn(5).stay(100).fadeOut(5).send(target);
         target.sendMessage(new TextComponent("\n"));
         target.sendMessage(new ComponentBuilder(prefix).append("You have been Warned, Reason: " + sb).color(ChatColor.RED).create());
         target.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());

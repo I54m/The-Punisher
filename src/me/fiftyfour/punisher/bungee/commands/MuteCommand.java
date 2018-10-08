@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
+import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
@@ -14,6 +15,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +30,7 @@ public class MuteCommand extends Command {
     private long length;
     private String targetuuid;
     private String targetname;
+    private int sqlfails = 0;
 
     public MuteCommand() {
         super("mute", "punisher.mute", "tempmute");
@@ -62,11 +67,21 @@ public class MuteCommand extends Command {
                 PreparedStatement stmt3 = plugin.connection.prepareStatement(sql3);
                 stmt3.executeUpdate();
             }
-        }catch (SQLException sqle){
-            plugin.mysqlfail(sqle);
+        }catch (SQLException e){
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         boolean duration;
         try {
@@ -142,7 +157,7 @@ public class MuteCommand extends Command {
                 return;
             }
             executorService.shutdown();
-        }else return;
+        }
         if (targetuuid == null) {
             player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
             return;
@@ -165,10 +180,20 @@ public class MuteCommand extends Command {
                 stmt1.executeUpdate();
             }
         }catch (SQLException e){
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         try {
             String sql = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
@@ -192,10 +217,20 @@ public class MuteCommand extends Command {
                 stmt3.executeUpdate();
             }
         }catch (SQLException e){
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         try {
             String sql = "SELECT * FROM `mutes` WHERE UUID='" + targetuuid + "'";
@@ -211,10 +246,20 @@ public class MuteCommand extends Command {
                 stmt1.executeUpdate();
             }
         }catch (SQLException e){
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         ProxyServer.getInstance().getScheduler().runAsync(plugin, new Runnable() {
             @Override
@@ -226,7 +271,16 @@ public class MuteCommand extends Command {
                 int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
                 int secondsleft = (int) (muteleftmillis / 1000 % 60);
                 if (target != null) {
-                    ProxyServer.getInstance().createTitle().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).fadeIn(5).stay(100).fadeOut(5).send(target);
+                    try {
+                        ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+                        DataOutputStream out = new DataOutputStream(outbytes);
+                        out.writeUTF("Punisher");
+                        out.writeUTF("PlayPunishSound");
+                        player.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                    }catch (IOException ioe){
+                        ioe.printStackTrace();
+                    }
+                    ProxyServer.getInstance().createTitle().title(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).subTitle(new TextComponent(ChatColor.RED + "Reason: " + reason.toString())).fadeIn(5).stay(100).fadeOut(5).send(player);
                     target.sendMessage(new TextComponent("\n"));
                     target.sendMessage(new ComponentBuilder(prefix).append("You have been Muted! Reason: " + reason.toString()).color(ChatColor.RED).create());
                     target.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());

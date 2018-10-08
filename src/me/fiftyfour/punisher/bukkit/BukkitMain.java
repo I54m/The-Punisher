@@ -69,6 +69,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
         this.getCommand("bold").setExecutor(new BoldCommand());
         //register plugin message channels
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PunishGUI());
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PluginMessageEvent());
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         //check for updates
         getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Checking for updates...");

@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
+import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
@@ -20,6 +21,7 @@ public class StaffhistoryCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
     private String targetuuid;
+    private int sqlfails = 0;
 
     public StaffhistoryCommand() {
         super("staffhistory", "punisher.staffhistory", "shist");
@@ -91,10 +93,20 @@ public class StaffhistoryCommand extends Command {
                         stmt1.close();
                         player.sendMessage(new ComponentBuilder(prefix).append("All staff history for: " + targetname + " has been cleared!").color(ChatColor.GREEN).create());
                     }catch (SQLException e){
-                        plugin.mysqlfail(e);
+                        plugin.getLogger().severe(prefix + e);
+                        sqlfails++;
+                        if(sqlfails > 5){
+                            plugin.getProxy().getPluginManager().unregisterCommand(this);
+                            commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                            commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                            plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                            plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                            BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                            BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                            return;
+                        }
                         if (plugin.testConnectionManual())
                             this.execute(commandSender, strings);
-                        return;
                     }
                 }
                 try {
@@ -125,8 +137,19 @@ public class StaffhistoryCommand extends Command {
                     }
                     stmt.close();
                     results.close();
-                } catch (SQLException e) {
-                    plugin.mysqlfail(e);
+                }catch (SQLException e){
+                    plugin.getLogger().severe(prefix + e);
+                    sqlfails++;
+                    if(sqlfails > 5){
+                        plugin.getProxy().getPluginManager().unregisterCommand(this);
+                        commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                        commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                        plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                        plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                        BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                        BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                        return;
+                    }
                     if (plugin.testConnectionManual())
                         this.execute(commandSender, strings);
                 }

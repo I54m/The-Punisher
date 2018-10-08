@@ -34,6 +34,7 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class BungeeMain extends Plugin implements Listener {
 //setup variables
     private static BungeeMain instance;
@@ -58,6 +59,7 @@ public class BungeeMain extends Plugin implements Listener {
 
     @Override
     public void onEnable() {
+        long startTime = System.nanoTime();
         //set instance
         setInstance(this);
         //startup messages
@@ -173,13 +175,18 @@ public class BungeeMain extends Plugin implements Listener {
         //setup mysql
         setupmysql();
         testConnection();
+        long duration = (System.nanoTime()-startTime)/1000000;
+        getLogger().info(prefix + ChatColor.GREEN + "took " + duration + "ms");
     }
     public void onDisable() {
         Logs.info("****END OF LOGS ENDING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
         try {
+            getLogger().severe(prefix + ChatColor.GREEN + "Closing Storage....");
             if (hikari!=null && !hikari.isClosed())
                 hikari.close();
+            getLogger().severe(prefix + ChatColor.GREEN + "Storage Closed!");
         } catch(Exception e) {
+            getLogger().severe(prefix + ChatColor.RED + "Could not Close Storage!");
             e.printStackTrace();
         }
     }

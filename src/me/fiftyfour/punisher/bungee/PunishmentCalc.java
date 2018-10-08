@@ -13,9 +13,7 @@ import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,6 +29,7 @@ public class PunishmentCalc implements Listener {
     private String name, uuid, reason;
     private ProxiedPlayer punisher;
     private int offence;
+    private int sqlfails = 0;
 
     @EventHandler
     public void onPluginMessage(PluginMessageEvent e) {
@@ -72,17 +71,27 @@ public class PunishmentCalc implements Listener {
                 }
                 stmt2.close();
                 results2.close();
-                punish(uuid, reason);
+                if (sqlfails < 5)
+                    punish(uuid, reason);
+                else throw new SQLException("sql has failed 5 times or more!");
             }catch (SQLException sqle){
-                plugin.mysqlfail(sqle);
+                plugin.getLogger().severe(prefix + e);
+                sqlfails++;
+                if(sqlfails > 5){
+                    plugin.getProxy().getPluginManager().unregisterListener(this);
+                    plugin.getLogger().severe(prefix + "Event: OnPluginMessageReceived has thrown an exception more than 5 times!");
+                    plugin.getLogger().severe(prefix + "Disabling event to prevent further damage to database!");
+                    BungeeMain.Logs.severe("Event: OnPluginMessageReceived has thrown an exception more than 5 times!");
+                    BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                    return;
+                }
                 if (plugin.testConnectionManual())
                     plugin.getProxy().getPluginManager().callEvent(new PluginMessageEvent(e.getSender(), e.getReceiver(), e.getTag(), e.getData()));
             }
         }
     }
 
-    private void punish(String uuid, String reason) {
-        try {
+    private void punish(String uuid, String reason) throws SQLException{
             int cooldownTime = 20;
             if (cooldowns.containsKey(name) && !punisher.hasPermission("punisher.cooldowns.override")) {
                 long secondsLeft = ((cooldowns.get(name) / 1000) + cooldownTime) - (System.currentTimeMillis() / 1000);
@@ -114,7 +123,16 @@ public class PunishmentCalc implements Listener {
             if (reason.contains("Manually ")) {
                 if (reason.contains("Warned")) {
                     if (player != null) {
-                        ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).fadeIn(5).stay(100).fadeOut(5).send(player);
+                        try {
+                            ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+                            DataOutputStream out = new DataOutputStream(outbytes);
+                            out.writeUTF("Punisher");
+                            out.writeUTF("PlayPunishSound");
+                            player.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                        }catch (IOException ioe){
+                            ioe.printStackTrace();
+                        }
+                        ProxyServer.getInstance().createTitle().title(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).subTitle(new TextComponent(ChatColor.RED + "Reason: " + reason)).fadeIn(5).stay(100).fadeOut(5).send(player);
                         player.sendMessage(new TextComponent("\n"));
                         player.sendMessage(new ComponentBuilder(prefix).append("You have been Warned, Reason: " + reason).color(ChatColor.RED).create());
                         player.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());
@@ -235,7 +253,16 @@ public class PunishmentCalc implements Listener {
             String punishment = BungeeMain.PunishmentsConfig.getString(reason + "." + offence);
             if (punishment.equalsIgnoreCase("warn")) {
                 if (player != null) {
-                    ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).fadeIn(5).stay(100).fadeOut(5).send(player);
+                    try {
+                        ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+                        DataOutputStream out = new DataOutputStream(outbytes);
+                        out.writeUTF("Punisher");
+                        out.writeUTF("PlayPunishSound");
+                        player.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                    }catch (IOException ioe){
+                        ioe.printStackTrace();
+                    }
+                    ProxyServer.getInstance().createTitle().title(new TextComponent(ChatColor.DARK_RED + "You have been Warned!!")).subTitle(new TextComponent(ChatColor.RED + "Reason: " + reason)).fadeIn(5).stay(100).fadeOut(5).send(player);
                     player.sendMessage(new TextComponent("\n"));
                     player.sendMessage(new ComponentBuilder(prefix).append("You have been Warned, Reason: " + reason).color(ChatColor.RED).create());
                     player.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());
@@ -267,14 +294,9 @@ public class PunishmentCalc implements Listener {
                 BungeeMain.Logs.severe("CONFIGURATION ERROR, Error in configuration file: punishments.yml - Could not find punishment for player: " + name + " to fit the reason: " + reason + " with offence number: " + offence
                 + " \nThis may be due to a misconfiguration in the punishments.yml file, if you can find the misconfiguration do /punisher punishments reset to reset them to their default values!");
             }
-        }catch (SQLException sqle){
-            plugin.mysqlfail(sqle);
-            if (plugin.testConnectionManual())
-                punish(uuid, reason);
-        }
     }
 
-    private void mute(ProxiedPlayer player, long length) {
+    private void mute(ProxiedPlayer player, long length) throws SQLException {
         if (offence ==  1){
             ReputationSystem.minusRep(name, uuid, 0.5);
         }else if (offence == 2){
@@ -284,7 +306,6 @@ public class PunishmentCalc implements Listener {
         }else if (offence == 4 || offence == 5){
             ReputationSystem.minusRep(name, uuid, 2);
         }
-        try {
             String sql = "SELECT * FROM `mutes` WHERE UUID='" + uuid + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
@@ -310,7 +331,16 @@ public class PunishmentCalc implements Listener {
             int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
             int secondsleft = (int) (muteleftmillis / 1000 % 60);
             if (player != null) {
-                ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).fadeIn(5).stay(100).fadeOut(5).send(player);
+                try {
+                    ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+                    DataOutputStream out = new DataOutputStream(outbytes);
+                    out.writeUTF("Punisher");
+                    out.writeUTF("PlayPunishSound");
+                    player.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                }catch (IOException ioe){
+                    ioe.printStackTrace();
+                }
+                ProxyServer.getInstance().createTitle().title(new TextComponent(ChatColor.DARK_RED + "You have been Muted!!")).subTitle(new TextComponent(ChatColor.RED + "Reason: " + reason)).fadeIn(5).stay(100).fadeOut(5).send(player);
                 player.sendMessage(new TextComponent("\n"));
                 player.sendMessage(new ComponentBuilder(prefix).append("You have been Muted! Reason: " + reason).color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(prefix).append("Something you did was against our server rules!").color(ChatColor.RED).create());
@@ -329,14 +359,9 @@ public class PunishmentCalc implements Listener {
             else
                 StaffChat.sendMessage("This mute is permanent and does not expire!");
             BungeeMain.Logs.info(name + " Was Muted for: " + reason + " by: " + punisher.getName());
-        }catch (SQLException sqle){
-            plugin.mysqlfail(sqle);
-            if (plugin.testConnectionManual())
-                punish(uuid, reason);
-        }
     }
 
-    private void ban(ProxiedPlayer player, long length) {
+    private void ban(ProxiedPlayer player, long length) throws SQLException{
         if (offence ==  1){
             ReputationSystem.minusRep(name, uuid, 1);
         }else if (offence == 2){
@@ -346,7 +371,7 @@ public class PunishmentCalc implements Listener {
         }else if (offence == 4 || offence == 5){
             ReputationSystem.minusRep(name, uuid, 4);
         }
-        try {
+
             String sql = "SELECT * FROM `bans` WHERE UUID='" + uuid + "'";
             PreparedStatement stmt = plugin.connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
@@ -390,11 +415,6 @@ public class PunishmentCalc implements Listener {
             StaffChat.sendMessage("This ban expires in: " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s");
             else
                 StaffChat.sendMessage("This ban is permanent and does not expire!");
-        }catch (SQLException sqle){
-            plugin.mysqlfail(sqle);
-            if (plugin.testConnectionManual())
-                punish(uuid, reason);
-        }
         BungeeMain.Logs.info(name + " Was banned for: " + reason + " by: " + punisher.getName());
     }
 }

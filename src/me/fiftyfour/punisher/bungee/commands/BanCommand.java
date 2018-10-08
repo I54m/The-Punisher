@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
+import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
@@ -25,6 +26,7 @@ public class BanCommand extends Command {
     private long length;
     private String targetname;
     private String targetuuid;
+    private int sqlfails = 0;
 
     public BanCommand() {
         super("ban", "punisher.ban", "tempban", "ipban", "banip");
@@ -32,7 +34,6 @@ public class BanCommand extends Command {
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
-        long starttime = System.nanoTime();
         if (!(commandSender instanceof ProxiedPlayer)) {
             commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             return;
@@ -109,21 +110,36 @@ public class BanCommand extends Command {
             }
             stmt2.close();
             results2.close();
-        }catch (SQLException sqle){
-            plugin.mysqlfail(sqle);
+        }catch (SQLException e){
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if(sqlfails > 5){
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
-                execute(commandSender, strings);
+                this.execute(commandSender, strings);
         }
         String reasonString = reason.toString().replace("\"", "'");
         if (future != null && targetuuid == null) {
             try {
-                targetuuid = future.get(5, TimeUnit.SECONDS);
+                targetuuid = future.get(10, TimeUnit.SECONDS);
             } catch (TimeoutException te) {
                 player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
                 BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
                 BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                BungeeMain.Logs.severe("Stack Trace: " + te.getStackTrace().toString());
+                StringBuilder stacktrace = new StringBuilder();
+                for (StackTraceElement stackTraceElement : te.getStackTrace()) {
+                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                }
+                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 executorService.shutdown();
                 return;
             } catch (Exception e) {
@@ -132,7 +148,11 @@ public class BanCommand extends Command {
                 player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
                 BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
                 BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                BungeeMain.Logs.severe("Stack Trace: " + e.getStackTrace().toString());
+                StringBuilder stacktrace = new StringBuilder();
+                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                }
+                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 executorService.shutdown();
                 return;
             }
@@ -204,8 +224,6 @@ public class BanCommand extends Command {
                 this.execute(commandSender, strings);
             return;
         }
-        player.sendMessage(new TextComponent(targetuuid));
-        player.sendMessage(new TextComponent(player.getUniqueId().toString().replace("-", "")));
         Long banleftmillis = length;
         int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
         int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
@@ -262,9 +280,5 @@ public class BanCommand extends Command {
             return;
         }
         BungeeMain.Logs.info(targetname + " Was Banned for: " + reason + " by: " + player.getName());
-        player.sendMessage(new TextComponent("done"));
-        long endtime = System.nanoTime();
-        long durationtime = endtime - starttime;
-        player.sendMessage(new TextComponent("took " + (durationtime / 1000000) + "ms"));
     }
 }
