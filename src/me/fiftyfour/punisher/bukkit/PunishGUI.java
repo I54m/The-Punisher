@@ -1,8 +1,5 @@
 package me.fiftyfour.punisher.bukkit;
 
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.sun.istack.internal.NotNull;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
@@ -26,8 +23,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
+import java.io.*;
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -41,9 +38,18 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
     private BukkitMain plugin = BukkitMain.getInstance();
 
     private static void sendPluginMessage(@NotNull Player player, String channel, @NotNull String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        Arrays.stream(messages).forEach(out::writeUTF);
-        player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, out.toByteArray());
+        try {
+            ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outbytes);
+            for (String msg : messages){
+                out.writeUTF(msg);
+            }
+            player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, outbytes.toByteArray());
+            out.close();
+            outbytes.close();
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+        }
     }
 
     @Override
@@ -329,34 +335,41 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message) {
         if (channel.equals("BungeeCord")) {
-            ByteArrayDataInput in = ByteStreams.newDataInput(message);
-            String subchannel = in.readUTF();
-            if (subchannel.equals("rep")) {
-                String repstring = in.readUTF();
-                double rep;
-                String targetuuid = in.readUTF();
-                String targetname = in.readUTF();
-                reputation = new StringBuilder();
-                try {
-                    rep = Double.parseDouble(repstring);
-                } catch (NumberFormatException e) {
-                    reputation.append(ChatColor.WHITE).append("(").append("-").append("/10").append(")");
+            try {
+                ByteArrayInputStream inBytes = new ByteArrayInputStream(message);
+                DataInputStream in = new DataInputStream(inBytes);
+                String subchannel = in.readUTF();
+                if (subchannel.equals("rep")) {
+                    String repstring = in.readUTF();
+                    double rep;
+                    String targetuuid = in.readUTF();
+                    String targetname = in.readUTF();
+                    reputation = new StringBuilder();
+                    try {
+                        rep = Double.parseDouble(repstring);
+                    } catch (NumberFormatException e) {
+                        reputation.append(ChatColor.WHITE).append("(").append("-").append("/10").append(")");
+                        openGUI(player, targetuuid, targetname);
+                        return;
+                    }
+                    String repString = new DecimalFormat("##.##").format(rep);
+                    if (rep == 5) {
+                        reputation.append(ChatColor.WHITE).append("(").append(repString).append("/10").append(")");
+                    } else if (rep > 5) {
+                        reputation.append(ChatColor.GREEN).append("(").append(repString).append("/10").append(")");
+                    } else if (rep < 5 && rep > -1) {
+                        reputation.append(ChatColor.YELLOW).append("(").append(repString).append("/10").append(")");
+                    } else if (rep < -1 && rep > -8) {
+                        reputation.append(ChatColor.GOLD).append("(").append(repString).append("/10").append(")");
+                    } else if (rep < -8) {
+                        reputation.append(ChatColor.RED).append("(").append(repString).append("/10").append(")");
+                    }
                     openGUI(player, targetuuid, targetname);
-                    return;
                 }
-                String repString = new DecimalFormat("##.##").format(rep);
-                if (rep == 5) {
-                    reputation.append(ChatColor.WHITE).append("(").append(repString).append("/10").append(")");
-                } else if (rep > 5) {
-                    reputation.append(ChatColor.GREEN).append("(").append(repString).append("/10").append(")");
-                } else if (rep < 5 && rep > -1) {
-                    reputation.append(ChatColor.YELLOW).append("(").append(repString).append("/10").append(")");
-                } else if (rep < -1 && rep > -8) {
-                    reputation.append(ChatColor.GOLD).append("(").append(repString).append("/10").append(")");
-                } else if (rep < -8) {
-                    reputation.append(ChatColor.RED).append("(").append(repString).append("/10").append(")");
-                }
-                openGUI(player, targetuuid, targetname);
+                in.close();
+                inBytes.close();
+            }catch (IOException ioe) {
+                ioe.printStackTrace();
             }
         }
     }

@@ -1,26 +1,35 @@
 package me.fiftyfour.punisher.bukkit.commands;
 
-        import com.google.common.io.ByteArrayDataOutput;
-        import com.google.common.io.ByteStreams;
         import com.sun.istack.internal.NotNull;
-        import me.fiftyfour.punisher.bukkit.BukkitMain;
-        import org.bukkit.Bukkit;
-        import org.bukkit.ChatColor;
-        import org.bukkit.command.Command;
-        import org.bukkit.command.CommandExecutor;
-        import org.bukkit.command.CommandSender;
-        import org.bukkit.entity.Player;
+import me.fiftyfour.punisher.bukkit.BukkitMain;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
-        import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 public class ToggleChat implements CommandExecutor {
     private BukkitMain plugin = BukkitMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
 
     private static void sendPluginMessage(@NotNull Player player, String channel, @NotNull String... messages) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        Arrays.stream(messages).forEach(out::writeUTF);
-        player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, out.toByteArray());
+        try {
+            ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outbytes);
+            for (String msg : messages){
+                out.writeUTF(msg);
+            }
+            player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, outbytes.toByteArray());
+            out.close();
+            outbytes.close();
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+        }
     }
 
     @Override
