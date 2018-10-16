@@ -157,7 +157,7 @@ public class BanCommand extends Command {
                 return;
             }
             executorService.shutdown();
-        } else return;
+        }
         if (targetuuid == null) {
             player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
             return;
