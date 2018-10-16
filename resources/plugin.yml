@@ -1,7 +1,7 @@
 name: The-Punisher
 author: 54mpenguin
 website: https://54mpenguin.com
-version: 1.5
+version: 1.5.1
 main: me.fiftyfour.punisher.bukkit.BukkitMain
 depend: [LuckPerms]
 description: The Spigot side of the Punisher plugin.
@@ -19,6 +19,8 @@ commands:
  bold:
   description: sends a chat message in bold or red bold.
   aliases: [b]
+ punisherbukkit:
+   description: admin commands for the bukkit side of the punisher
 
 
 permissions:
@@ -60,4 +62,7 @@ permissions:
   default: op
  punisher.bold.red:
   description: allows the player to make their chat appear red bold.
+  default: op
+ punisher.bukkit.admin:
+  description: allows the player to use bukkit admin commands relating to the punisher.
   default: op
