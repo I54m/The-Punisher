@@ -5,10 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.bungee.commands.*;
-import me.fiftyfour.punisher.bungee.events.onChat;
-import me.fiftyfour.punisher.bungee.events.onPluginMessage;
-import me.fiftyfour.punisher.bungee.events.onServerConnect;
-import me.fiftyfour.punisher.bungee.events.onTabComplete;
+import me.fiftyfour.punisher.bungee.events.*;
 import me.fiftyfour.punisher.systems.UpdateChecker;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.plugin.Listener;
@@ -119,6 +116,11 @@ public class BungeeMain extends Plugin implements Listener {
             saveDefaultConfig();
             PunisherConfig.set("Configversion", this.getDescription().getVersion());
         }
+        //check if rep on vote should be enabled
+        if (getProxy().getPluginManager().getPlugin("Votifier") != null && PunisherConfig.getBoolean("Voting.addRepOnVote")){
+            getLogger().info(prefix + ChatColor.GREEN + "Enabled Rep on Vote feature!");
+            getProxy().getPluginManager().registerListener(this, new onVote());
+        }
         //start logging to logs file
         Logs.info("****START OF LOGS BEGINNING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
         //check if help command should be enabled
@@ -176,7 +178,7 @@ public class BungeeMain extends Plugin implements Listener {
         setupmysql();
         testConnection();
         long duration = (System.nanoTime()-startTime)/1000000;
-        getLogger().info(prefix + ChatColor.GREEN + "took " + duration + "ms");
+        getLogger().info(prefix + ChatColor.GREEN + "Start Completed! (took " + duration + "ms)");
     }
     public void onDisable() {
         Logs.info("****END OF LOGS ENDING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
@@ -184,7 +186,6 @@ public class BungeeMain extends Plugin implements Listener {
             getLogger().severe(prefix + ChatColor.GREEN + "Closing Storage....");
             if (hikari!=null && !hikari.isClosed())
                 hikari.close();
-            getLogger().severe(prefix + ChatColor.GREEN + "Storage Closed!");
         } catch(Exception e) {
             getLogger().severe(prefix + ChatColor.RED + "Could not Close Storage!");
             e.printStackTrace();

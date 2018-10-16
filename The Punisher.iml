@@ -12,5 +12,6 @@
     <orderEntry type="library" name="luckperms-api-4.2" level="project" />
     <orderEntry type="library" name="HikariCP-3.2.0" level="project" />
     <orderEntry type="library" name="spigot-1.12.2" level="project" />
+    <orderEntry type="library" name="nuvotifier-2.4.1" level="project" />
   </component>
 </module>
