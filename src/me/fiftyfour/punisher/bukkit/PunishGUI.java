@@ -3,6 +3,7 @@ package me.fiftyfour.punisher.bukkit;
 import com.sun.istack.internal.NotNull;
 import me.fiftyfour.punisher.fetchers.NameFetcher;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.fetchers.UserFetcher;
 import me.fiftyfour.punisher.systems.IconMenu;
 import me.fiftyfour.punisher.systems.Permissions;
 import me.lucko.luckperms.LuckPerms;
@@ -41,13 +42,13 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
         try {
             ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outbytes);
-            for (String msg : messages){
+            for (String msg : messages) {
                 out.writeUTF(msg);
             }
             player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, outbytes.toByteArray());
             out.close();
             outbytes.close();
-        }catch (IOException ioe){
+        } catch (IOException ioe) {
             ioe.printStackTrace();
         }
     }
@@ -70,14 +71,14 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                 Player findTarget = Bukkit.getPlayer(args[0]);
                 Future<String> future = null;
                 ExecutorService executorService = null;
-                if (findTarget != null){
+                if (findTarget != null) {
                     targetuuid = findTarget.getUniqueId().toString().replace("-", "");
                     UUID formatedUuid = UUIDFetcher.formatUUID(targetuuid);
                     if (formatedUuid.equals(p.getUniqueId())) {
                         p.sendMessage(prefix + ChatColor.RED + "You may not punish yourself!");
                         return false;
                     }
-                }else {
+                } else {
                     UUIDFetcher uuidFetcher = new UUIDFetcher();
                     uuidFetcher.fetch(args[0]);
                     executorService = Executors.newSingleThreadExecutor();
@@ -92,7 +93,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Connection to mojang API took too long! Unable to fetch " + args[0] + "'s uuid!");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + te.getMessage());
                         StringBuilder stacktrace = new StringBuilder();
-                        for (StackTraceElement stackTraceElement : te.getStackTrace()){
+                        for (StackTraceElement stackTraceElement : te.getStackTrace()) {
                             stacktrace.append(stackTraceElement.toString()).append("\n");
                         }
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
@@ -104,7 +105,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "ERROR: Unexpected error while setting up GUI! Unable to fetch " + args[0] + "'s uuid!");
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Error message: " + e.getMessage());
                         StringBuilder stacktrace = new StringBuilder();
-                        for (StackTraceElement stackTraceElement : e.getStackTrace()){
+                        for (StackTraceElement stackTraceElement : e.getStackTrace()) {
                             stacktrace.append(stackTraceElement.toString()).append("\n");
                         }
                         sendPluginMessage(p, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
@@ -118,7 +119,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                     return false;
                 }
                 String targetName = NameFetcher.getName(targetuuid);
-                if (targetName == null){
+                if (targetName == null) {
                     targetName = args[0];
                 }
                 sendPluginMessage(p, "BungeeCord", "getrep", targetuuid, targetName);
@@ -187,7 +188,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
             menu.addButton(12, new ItemStack(Material.NETHERRACK, 1), ChatColor.RED + "Major Chat Offence", ChatColor.WHITE + "Racism, Disrespect ETC");
             menu.addButton(13, Iron_Boots, ChatColor.RED + "DDoS/DoX Threats", ChatColor.WHITE + "Includes Hinting At It and", ChatColor.WHITE + "Saying They Have a Player's DoX");
             menu.addButton(14, new ItemStack(Material.BOOK_AND_QUILL, 1), ChatColor.RED + "Inappropriate Link", ChatColor.WHITE + "Includes Pm's");
-            if(plugin.getServer().getVersion().contains("1.8"))
+            if (plugin.getServer().getVersion().contains("1.8"))
                 menu.addButton(15, new ItemStack(Material.SKULL_ITEM, 1, (short) 1), ChatColor.RED + "Scamming", ChatColor.WHITE + "When a player is unfairly taking a player's money", ChatColor.WHITE + "Through a fake scheme");
             else
                 menu.addButton(15, new ItemStack(Material.SKULL_ITEM, 1, (short) 5), ChatColor.RED + "Scamming", ChatColor.WHITE + "When a player is unfairly taking a player's money", ChatColor.WHITE + "Through a fake scheme");
@@ -243,92 +244,124 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
     private void punishmentSelected(String toPunishuuid, String targetName, int row, int slot, String item) {
         menu.close(clicker);
         User user = LuckPerms.getApi().getUser(targetName);
+        user = null;
         if (user == null) {
-            user = Permissions.giveMeADamnUser(UUIDFetcher.formatUUID(toPunishuuid));
-            if(user == null){
+            UserFetcher userFetcher = new UserFetcher();
+            userFetcher.setUuid(UUIDFetcher.formatUUID(toPunishuuid));
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Future<User> userFuture = executorService.submit(userFetcher);
+            try {
+                user = userFuture.get(5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                clicker.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Luckperms was unable to fetch permission data on: " + targetName);
+                clicker.sendMessage(prefix + ChatColor.RED + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+                sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "ERROR: Luckperms was unable to fetch permission data on: " + targetName);
+                sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "Error message: " + e.getMessage());
+                StringBuilder stacktrace = new StringBuilder();
+                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                }
+                sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
+                executorService.shutdown();
+                return;
+            }
+            executorService.shutdown();
+            if (user == null) {
                 throw new IllegalStateException();
             }
         }
         ContextManager cm = LuckPerms.getApi().getContextManager();
         Contexts contexts = cm.lookupApplicableContexts(user).orElse(cm.getStaticContexts());
         PermissionData permissionData = user.getCachedData().getPermissionData(contexts);
-        if (!permissionData.getPermissionValue("punisher.bypass").asBoolean() || Permissions.higher(clicker, toPunishuuid, targetName)) {
-            clicker.sendMessage(prefix + ChatColor.GREEN + "Punishing " + targetName + " for: " + itemName + ChatColor.GREEN);
-            if (row == 1 && (slot == 2 || slot == 3) && item.contains("Spam, Flood ETC")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Minor Chat Offence");
-            } else if (row == 1 && (slot == 3 || slot == 4) && item.contains("Racism, Disrespect ETC")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Major Chat Offence");
-            } else if (row == 1 && slot == 5 && item.contains("For Other Not Listed Offences")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Offence");
-            } else if (row == 1 && slot == 4 && item.contains("Includes Hinting At It and")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "DDoS/DoX Threats");
-            } else if (row == 1 && slot == 5 && item.contains("Includes Pm's")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Inappropriate Link");
-            } else if (row == 1 && slot == 6 && item.contains("If They Say They are a")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Impersonating Staff");
-            } else if (row == 2 && slot == 0 && item.contains("Mining Straight to Ores/Bases/Chests")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "X-Raying");
-            } else if (row == 2 && slot == 1 && item.contains("Using AutoClicker to Farm Mobs ETC")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "AutoClicker(Non PvP)");
-            } else if (row == 2 && slot == 2 && item.contains("Includes Hacks Such as Jesus and Spider")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Fly/Speed Hacking");
-            } else if (row == 2 && slot == 3 && item.contains("Includes Hacks Such as Kill Aura and Reach")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Malicious PvP Hacks");
-            } else if (row == 2 && slot == 4 && item.contains("Includes Hacks Such as Derp and Headless")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Disallowed Mods");
-            } else if (row == 2 && slot == 5 && item.contains("Excludes Cobble Monstering and Bypassing land claims")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Greifing");
-            } else if (row == 2 && slot == 6 && item.contains("Warning: Must Also Clear Chat After you have proof!")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Server Advertisment");
-            } else if (row == 2 && slot == 7 && item.contains("Includes Bypassing Land Claims and Cobble Monstering")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Exploiting");
-            } else if (row == 2 && slot == 8 && item.contains("Sending a TPA Request to Someone and Then Killing Them Once They Tp")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "TPA-Trapping");
-            } else if (row == 3 && slot == 3 && item.contains("Includes Inappropriate IGN's and Other Major Offences")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Major Offence");
-            } else if (row == 3 && slot == 4 && item.contains("For Other Minor Offences")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Minor Offence");
-            } else if (row == 3 && slot == 5 && item.contains("Any type of Impersonation")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Player Impersonation");
-            } else if (row == 4 && slot == 0 && item.contains("Manually Warn the Player")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Warned");
-            } else if (row == 4 && slot == 1 && item.contains("Manually Mute the Player For 1 Hour")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Hour");
-            } else if (row == 4 && slot == 2 && item.contains("Manually Mute the Player For 1 Day")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Day");
-            } else if (row == 4 && slot == 3 && item.contains("Manually Mute the Player For 3 Days")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 3 Days");
-            } else if (row == 4 && slot == 4 && item.contains("Manually Mute the Player For 1 Week")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Week");
-            } else if (row == 4 && slot == 5 && item.contains("Manually Mute the Player For 2 Weeks")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 2 Weeks");
-            } else if (row == 4 && slot == 6 && item.contains("Manually Mute the Player For 3 Weeks")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 3 Weeks");
-            } else if (row == 4 && slot == 7 && item.contains("Manually Mute the Player For 1 Month")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Month");
-            } else if (row == 4 && slot == 8 && item.contains("Manually Mute the Player Permanently")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted Permanently");
-            } else if (row == 5 && slot == 0 && item.contains("Manually Kick the Player")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Kicked");
-            } else if (row == 5 && slot == 1 && item.contains("Manually Ban The Player For 1 Hour")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Hour");
-            } else if (row == 5 && slot == 2 && item.contains("Manually Ban the Player For 1 Day")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Day");
-            } else if (row == 5 && slot == 3 && item.contains("Manually Ban the Player For 3 Days")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 3 Days");
-            } else if (row == 5 && slot == 4 && item.contains("Manually Ban the Player For 1 Week")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Week");
-            } else if (row == 5 && slot == 5 && item.contains("Manually Ban the Player For 2 Weeks")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 2 Weeks");
-            } else if (row == 5 && slot == 6 && item.contains("Manually Ban the Player For 3 Weeks")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 3 Weeks");
-            } else if (row == 5 && slot == 7 && item.contains("Manually Ban the Player For 1 Month")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Month");
-            } else if (row == 5 && slot == 8 && item.contains("Manually Ban the Player Permanently")) {
-                sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned Permanently");
+        try {
+            if (!permissionData.getPermissionValue("punisher.bypass").asBoolean() || Permissions.higher(clicker, toPunishuuid, targetName)) {
+                clicker.sendMessage(prefix + ChatColor.GREEN + "Punishing " + targetName + " for: " + itemName + ChatColor.GREEN);
+                if (row == 1 && (slot == 2 || slot == 3) && item.contains("Spam, Flood ETC")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Minor Chat Offence");
+                } else if (row == 1 && (slot == 3 || slot == 4) && item.contains("Racism, Disrespect ETC")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Major Chat Offence");
+                } else if (row == 1 && slot == 5 && item.contains("For Other Not Listed Offences")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Offence");
+                } else if (row == 1 && slot == 4 && item.contains("Includes Hinting At It and")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "DDoS/DoX Threats");
+                } else if (row == 1 && slot == 5 && item.contains("Includes Pm's")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Inappropriate Link");
+                } else if (row == 1 && slot == 6 && item.contains("If They Say They are a")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Impersonating Staff");
+                } else if (row == 2 && slot == 0 && item.contains("Mining Straight to Ores/Bases/Chests")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "X-Raying");
+                } else if (row == 2 && slot == 1 && item.contains("Using AutoClicker to Farm Mobs ETC")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "AutoClicker(Non PvP)");
+                } else if (row == 2 && slot == 2 && item.contains("Includes Hacks Such as Jesus and Spider")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Fly/Speed Hacking");
+                } else if (row == 2 && slot == 3 && item.contains("Includes Hacks Such as Kill Aura and Reach")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Malicious PvP Hacks");
+                } else if (row == 2 && slot == 4 && item.contains("Includes Hacks Such as Derp and Headless")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Disallowed Mods");
+                } else if (row == 2 && slot == 5 && item.contains("Excludes Cobble Monstering and Bypassing land claims")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Greifing");
+                } else if (row == 2 && slot == 6 && item.contains("Warning: Must Also Clear Chat After you have proof!")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Server Advertisment");
+                } else if (row == 2 && slot == 7 && item.contains("Includes Bypassing Land Claims and Cobble Monstering")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Exploiting");
+                } else if (row == 2 && slot == 8 && item.contains("Sending a TPA Request to Someone and Then Killing Them Once They Tp")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "TPA-Trapping");
+                } else if (row == 3 && slot == 3 && item.contains("Includes Inappropriate IGN's and Other Major Offences")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Major Offence");
+                } else if (row == 3 && slot == 4 && item.contains("For Other Minor Offences")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Other Minor Offence");
+                } else if (row == 3 && slot == 5 && item.contains("Any type of Impersonation")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Player Impersonation");
+                } else if (row == 4 && slot == 0 && item.contains("Manually Warn the Player")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Warned");
+                } else if (row == 4 && slot == 1 && item.contains("Manually Mute the Player For 1 Hour")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Hour");
+                } else if (row == 4 && slot == 2 && item.contains("Manually Mute the Player For 1 Day")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Day");
+                } else if (row == 4 && slot == 3 && item.contains("Manually Mute the Player For 3 Days")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 3 Days");
+                } else if (row == 4 && slot == 4 && item.contains("Manually Mute the Player For 1 Week")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Week");
+                } else if (row == 4 && slot == 5 && item.contains("Manually Mute the Player For 2 Weeks")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 2 Weeks");
+                } else if (row == 4 && slot == 6 && item.contains("Manually Mute the Player For 3 Weeks")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 3 Weeks");
+                } else if (row == 4 && slot == 7 && item.contains("Manually Mute the Player For 1 Month")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted for 1 Month");
+                } else if (row == 4 && slot == 8 && item.contains("Manually Mute the Player Permanently")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Muted Permanently");
+                } else if (row == 5 && slot == 0 && item.contains("Manually Kick the Player")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Kicked");
+                } else if (row == 5 && slot == 1 && item.contains("Manually Ban The Player For 1 Hour")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Hour");
+                } else if (row == 5 && slot == 2 && item.contains("Manually Ban the Player For 1 Day")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Day");
+                } else if (row == 5 && slot == 3 && item.contains("Manually Ban the Player For 3 Days")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 3 Days");
+                } else if (row == 5 && slot == 4 && item.contains("Manually Ban the Player For 1 Week")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Week");
+                } else if (row == 5 && slot == 5 && item.contains("Manually Ban the Player For 2 Weeks")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 2 Weeks");
+                } else if (row == 5 && slot == 6 && item.contains("Manually Ban the Player For 3 Weeks")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 3 Weeks");
+                } else if (row == 5 && slot == 7 && item.contains("Manually Ban the Player For 1 Month")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned for 1 Month");
+                } else if (row == 5 && slot == 8 && item.contains("Manually Ban the Player Permanently")) {
+                    sendPluginMessage(clicker, "BungeeCord", "punish", targetName, toPunishuuid, "Manually Banned Permanently");
+                }
+            } else {
+                clicker.sendMessage(prefix + ChatColor.RED + "You cannot Punish that player!");
             }
-        } else {
-            clicker.sendMessage(prefix + ChatColor.RED + "You cannot Punish that player!");
+        } catch (Exception e) {
+            clicker.sendMessage(prefix + ChatColor.DARK_RED + "ERROR: " + ChatColor.RED + "Luckperms was unable to fetch permission data on: " + targetName);
+            clicker.sendMessage(prefix + ChatColor.RED + "This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ");
+            sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "ERROR: Luckperms was unable to fetch permission data on: " + targetName);
+            sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "Error message: " + e.getMessage());
+            StringBuilder stacktrace = new StringBuilder();
+            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                stacktrace.append(stackTraceElement.toString()).append("\n");
+            }
+            sendPluginMessage(clicker, "BungeeCord", "LOG", "SEVERE", "Stack Trace: " + stacktrace.toString());
         }
     }
 
@@ -368,7 +401,7 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
                 }
                 in.close();
                 inBytes.close();
-            }catch (IOException ioe) {
+            } catch (IOException ioe) {
                 ioe.printStackTrace();
             }
         }

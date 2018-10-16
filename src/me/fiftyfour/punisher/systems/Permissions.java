@@ -1,25 +1,38 @@
 package me.fiftyfour.punisher.systems;
 
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.fetchers.UserFetcher;
 import me.lucko.luckperms.LuckPerms;
 import me.lucko.luckperms.api.Contexts;
 import me.lucko.luckperms.api.User;
 import me.lucko.luckperms.api.caching.PermissionData;
 import me.lucko.luckperms.api.context.ContextManager;
-import me.lucko.luckperms.api.manager.UserManager;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class Permissions {
 
-    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) {
+    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) throws Exception {
         UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
-            user = giveMeADamnUser(formattedUUID);
+            UserFetcher userFetcher = new UserFetcher();
+            userFetcher.setUuid(formattedUUID);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Future<User> userFuture = executorService.submit(userFetcher);
+            try {
+                user = userFuture.get(5, TimeUnit.SECONDS);
+            }catch (Exception e){
+                executorService.shutdown();
+                throw new Exception();
+            }
+            executorService.shutdown();
             if(user == null){
                 throw new IllegalStateException();
             }
@@ -43,11 +56,21 @@ public class Permissions {
             return true;
         }
     }
-    public static Boolean higher(Player player, String targetuuid, String targetname) {
+    public static Boolean higher(Player player, String targetuuid, String targetname) throws Exception{
         UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
-            user = giveMeADamnUser(formattedUUID);
+            UserFetcher userFetcher = new UserFetcher();
+            userFetcher.setUuid(formattedUUID);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Future<User> userFuture = executorService.submit(userFetcher);
+            try {
+                user = userFuture.get(5, TimeUnit.SECONDS);
+            }catch (Exception e){
+                executorService.shutdown();
+                throw new Exception();
+            }
+            executorService.shutdown();
             if(user == null){
                 throw new IllegalStateException();
             }
@@ -71,10 +94,5 @@ public class Permissions {
             return true;
         }
     }
-    public static User giveMeADamnUser(UUID uuid) {
-        UserManager userManager = LuckPerms.getApi().getUserManager();
-        CompletableFuture<User> userFuture = userManager.loadUser(uuid);
 
-        return userFuture.join();
-    }
 }

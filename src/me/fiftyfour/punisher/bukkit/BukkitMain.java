@@ -2,6 +2,7 @@ package me.fiftyfour.punisher.bukkit;
 
 import me.fiftyfour.punisher.bukkit.commands.BoldCommand;
 import me.fiftyfour.punisher.bukkit.commands.ClearChat;
+import me.fiftyfour.punisher.bukkit.commands.PunisherBukkit;
 import me.fiftyfour.punisher.bukkit.commands.ToggleChat;
 import me.fiftyfour.punisher.systems.UpdateChecker;
 import me.lucko.luckperms.api.LuckPermsApi;
@@ -13,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class BukkitMain extends JavaPlugin implements Listener {
     private static BukkitMain instance;
     public String chatState;
+    public static boolean update = false;
 
     public static BukkitMain getInstance() {
         return instance;
@@ -67,6 +69,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
         this.getCommand("clearchat").setExecutor(new ClearChat());
         this.getCommand("togglechat").setExecutor(new ToggleChat());
         this.getCommand("bold").setExecutor(new BoldCommand());
+        this.getCommand("punisherbukkit").setExecutor(new PunisherBukkit());
         //register plugin message channels
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PunishGUI());
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PluginMessageEvent());
@@ -76,13 +79,16 @@ public class BukkitMain extends JavaPlugin implements Listener {
         try {
             if (UpdateChecker.getCurrentVersion() == null) {
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Could not check for update!");
+                update = false;
             } else if (UpdateChecker.check()) {
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "Update checker found an update, current version: " + this.getDescription().getVersion() + " latest version: " + UpdateChecker.getCurrentVersion());
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This update was released on: " + UpdateChecker.getRealeaseDate());
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This may fix some bugs and enhance features.");
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "You will no longer receive support for this version!");
+                update = true;
             } else {
                 getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Plugin is up to date!");
+                update = false;
             }
         }catch (Exception e){
             getLogger().severe(e.getMessage());

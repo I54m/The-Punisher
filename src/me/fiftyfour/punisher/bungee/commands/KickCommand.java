@@ -31,8 +31,21 @@ public class KickCommand extends Command {
                 player.sendMessage(new ComponentBuilder(prefix).append("That is not an online player's name!").color(ChatColor.RED).create());
                 return;
             }
-            if (!Permissions.higher(player, target.getUniqueId().toString().replace("-", ""), target.getName())){
-                player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+            try {
+                if (!Permissions.higher(player, target.getUniqueId().toString().replace("-", ""), target.getName())) {
+                    player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+                    return;
+                }
+            }catch (Exception e){
+                player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + target.getName()).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+                BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + target.getName());
+                BungeeMain.Logs.severe("Error message: " + e.getMessage());
+                StringBuilder stacktrace = new StringBuilder();
+                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                }
+                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 return;
             }
             StringBuilder sb = new StringBuilder();

@@ -166,8 +166,21 @@ public class MuteCommand extends Command {
         if (targetname == null) {
             targetname = strings[0];
         }
-        if (!Permissions.higher(player, targetuuid, targetname)){
-            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+        try {
+            if (!Permissions.higher(player, targetuuid, targetname)) {
+                player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+                return;
+            }
+        }catch (Exception e){
+            player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + targetname).color(ChatColor.RED).create());
+            player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+            BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + targetname);
+            BungeeMain.Logs.severe("Error message: " + e.getMessage());
+            StringBuilder stacktrace = new StringBuilder();
+            for (StackTraceElement stackTraceElement : e.getStackTrace()){
+                stacktrace.append(stackTraceElement.toString()).append("\n");
+            }
+            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
             return;
         }
         try {

@@ -3,6 +3,7 @@ package me.fiftyfour.punisher.bungee.commands;
 import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
+import me.fiftyfour.punisher.systems.UpdateChecker;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -14,6 +15,8 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import static me.fiftyfour.punisher.bungee.BungeeMain.update;
+
 public class AdminCommands extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
@@ -23,6 +26,7 @@ public class AdminCommands extends Command {
         super("punisher", "punisher.admin");
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
         if (strings.length != 0) {
@@ -187,28 +191,38 @@ public class AdminCommands extends Command {
                     }
                     AdminChat.sendMessage("Plugin successfully reset!");
                     AdminChat.sendMessage("\n");
+                }else if (strings[0].equalsIgnoreCase("version")){
+                    if (!update) {
+                        player.sendMessage(new ComponentBuilder(prefix).append("Current Bungeecord Version: " + plugin.getDescription().getVersion()).color(ChatColor.GREEN).create());
+                        player.sendMessage(new ComponentBuilder(prefix).append("This is the latest version!").color(ChatColor.GREEN).create());
+                    }else{
+                        player.sendMessage(new ComponentBuilder(prefix).append("Current Bungeecord Version: " + plugin.getDescription().getVersion()).color(ChatColor.RED).create());
+                        player.sendMessage(new ComponentBuilder(prefix).append("Latest version: " + UpdateChecker.getCurrentVersion()).color(ChatColor.RED).create());
+                    }
                 }else {
-                    player.sendMessage(new ComponentBuilder(prefix).append("|------------").strikethrough(true).append(prefix).strikethrough(false).append("------------|").strikethrough(true).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything -").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher help -").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments -").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher reload -").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
-                    player.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql -").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("|------------").strikethrough(true).append(prefix).strikethrough(false).append("------------|").strikethrough(true).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything - ").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher help - ").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments - ").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset - ").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset - ").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reload - ").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql - ").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
+                    commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher version - ").color(ChatColor.RED).append("Get the current version").color(ChatColor.WHITE).create());
                 }
             } else {
                 commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             }
         } else {
             commandSender.sendMessage(new ComponentBuilder(prefix).append("|------------").strikethrough(true).append(prefix).strikethrough(false).append("------------|").strikethrough(true).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything -").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher help -").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments -").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset -").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reload -").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
-            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql -").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reseteverything - ").color(ChatColor.RED).append("Reset all stored data in the sql data base and on file.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher help - ").color(ChatColor.RED).append("Help command for the punisher.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher punishments - ").color(ChatColor.RED).append("Reset or delete punishments used for punishment calculation.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher bans reset - ").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher mutes reset - ").color(ChatColor.RED).append("Reset and delete all bans.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher reload - ").color(ChatColor.RED).append("Reload the config files.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher testsql - ").color(ChatColor.RED).append("perform a manual sql connection test.").color(ChatColor.WHITE).create());
+            commandSender.sendMessage(new ComponentBuilder(prefix).append("/punisher version - ").color(ChatColor.RED).append("Get the current version").color(ChatColor.WHITE).create());
         }
     }
 }

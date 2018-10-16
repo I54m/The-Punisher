@@ -46,9 +46,9 @@ public class BanCommand extends Command {
         ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
         Future<String> future = null;
         ExecutorService executorService = null;
-        if (findTarget != null){
+        if (findTarget != null) {
             targetuuid = findTarget.getUniqueId().toString().replace("-", "");
-        }else {
+        } else {
             UUIDFetcher uuidFetcher = new UUIDFetcher();
             uuidFetcher.fetch(strings[0]);
             executorService = Executors.newSingleThreadExecutor();
@@ -98,7 +98,7 @@ public class BanCommand extends Command {
         } else {
             reason.append("Manually Banned");
         }
-        try{
+        try {
             String sql2 = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
             PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
             ResultSet results2 = stmt2.executeQuery();
@@ -110,10 +110,10 @@ public class BanCommand extends Command {
             }
             stmt2.close();
             results2.close();
-        }catch (SQLException e){
+        } catch (SQLException e) {
             plugin.getLogger().severe(prefix + e);
             sqlfails++;
-            if(sqlfails > 5){
+            if (sqlfails > 5) {
                 plugin.getProxy().getPluginManager().unregisterCommand(this);
                 commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
                 commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
@@ -157,7 +157,7 @@ public class BanCommand extends Command {
                 return;
             }
             executorService.shutdown();
-        }else return;
+        } else return;
         if (targetuuid == null) {
             player.sendMessage(new ComponentBuilder("That is not a player's name!").color(ChatColor.RED).create());
             return;
@@ -170,8 +170,21 @@ public class BanCommand extends Command {
         } else {
             targetname = findTarget.getName();
         }
-        if (!Permissions.higher(player, targetuuid, targetname)) {
-            player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+        try {
+            if (!Permissions.higher(player, targetuuid, targetname)) {
+                player.sendMessage(new ComponentBuilder(prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
+                return;
+            }
+        } catch (Exception e) {
+            player.sendMessage(new ComponentBuilder(prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + targetname).color(ChatColor.RED).create());
+            player.sendMessage(new ComponentBuilder(prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
+            BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + targetname);
+            BungeeMain.Logs.severe("Error message: " + e.getMessage());
+            StringBuilder stacktrace = new StringBuilder();
+            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                stacktrace.append(stackTraceElement.toString()).append("\n");
+            }
+            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
             return;
         }
         try {
