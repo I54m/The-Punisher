@@ -43,6 +43,10 @@ public class BanCommand extends Command {
             player.sendMessage(new ComponentBuilder(prefix).append("Ban a player from the server").color(ChatColor.RED).append("\nUsage: /ban <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
+        if (targetname != null || targetuuid != null){
+            targetuuid = null;
+            targetname = null;
+        }
         ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
         Future<String> future = null;
         ExecutorService executorService = null;
