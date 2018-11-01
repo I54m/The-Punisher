@@ -111,7 +111,7 @@ public class AltsCommand extends Command {
                         }
                         stmt.close();
                         results.close();
-                    } else if (strings[0].equals("get")) {
+                    } else if (strings[0].equalsIgnoreCase("get")) {
                         ExecutorService executorService1;
                         Future<TextComponent> futurestatus = null;
                         Status statusClass = new Status();
