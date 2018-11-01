@@ -244,7 +244,6 @@ public class PunishGUI implements PluginMessageListener, CommandExecutor {
     private void punishmentSelected(String toPunishuuid, String targetName, int row, int slot, String item) {
         menu.close(clicker);
         User user = LuckPerms.getApi().getUser(targetName);
-        user = null;
         if (user == null) {
             UserFetcher userFetcher = new UserFetcher();
             userFetcher.setUuid(UUIDFetcher.formatUUID(toPunishuuid));
