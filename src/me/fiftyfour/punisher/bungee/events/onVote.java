@@ -5,7 +5,9 @@ import com.vexsoftware.votifier.model.Vote;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.systems.ReputationSystem;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
@@ -16,20 +18,23 @@ import java.util.concurrent.*;
 
 public class onVote implements Listener {
 
+    private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerVote(VotifierEvent event){
         Vote vote = event.getVote();
         String username = vote.getUsername();
         ProxiedPlayer player = ProxyServer.getInstance().getPlayer(username);
-        if (player != null && player.isConnected()){
-            ReputationSystem.addRep(username, player.getUniqueId().toString().replace("-", ""), BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToGive"));
+        if (player != null){
+            ReputationSystem.addRep(username, player.getUniqueId().toString().replace("-", ""), BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToAdd"));
+            player.sendMessage(new ComponentBuilder(prefix).append("Thanks for Voting, " + BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToAdd") + " Reputation added!").color(ChatColor.GREEN).create());
         }else{
             UUIDFetcher uuidFetcher = new UUIDFetcher();
             uuidFetcher.fetch(username);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             Future<String> future = executorService.submit(uuidFetcher);
             try {
-                ReputationSystem.addRep(username, future.get(10, TimeUnit.SECONDS), BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToGive"));
+                ReputationSystem.addRep(username, future.get(10, TimeUnit.SECONDS), BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToAdd"));
             }catch (TimeoutException te) {
                 BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + username + "'s uuid!");
                 BungeeMain.Logs.severe("Error message: " + te.getMessage());

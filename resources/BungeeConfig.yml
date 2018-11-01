@@ -1,5 +1,5 @@
 ######################################################################################The Punisher Main config ###########################################################################################################
-Configversion: "1.5.2"
+Configversion: "1.5.4"
 #DO NOT TOUCH THIS IT WILL MAKE A NEW CONFIG!!
 #This config is for the main config options, if you want to edit the automatic punishments go to punishments.yml in your bungee folder
 
@@ -29,6 +29,7 @@ Muted Commands:
   - "pm"
   - "global"
   - "broadcast"
+  - "g"
 
 #The ban messages will be shown when ever someone gets banned or blocked from logging in due to a ban
 #placeholders are %reason% for the ban reason, %days% for the days left, %hours% for the days left, %minutes% for the days left, %seconds% for the days left.

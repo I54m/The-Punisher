@@ -117,7 +117,7 @@ public class BungeeMain extends Plugin implements Listener {
             PunisherConfig.set("Configversion", this.getDescription().getVersion());
         }
         //check if rep on vote should be enabled
-        if (getProxy().getPluginManager().getPlugin("Votifier") != null && PunisherConfig.getBoolean("Voting.addRepOnVote")){
+        if ((getProxy().getPluginManager().getPlugin("NuVotifier") != null || getProxy().getPluginManager().getPlugin("Votifier") != null)&& PunisherConfig.getBoolean("Voting.addRepOnVote")){
             getLogger().info(prefix + ChatColor.GREEN + "Enabled Rep on Vote feature!");
             getProxy().getPluginManager().registerListener(this, new onVote());
         }
