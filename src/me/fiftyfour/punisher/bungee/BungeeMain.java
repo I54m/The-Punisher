@@ -89,7 +89,7 @@ public class BungeeMain extends Plugin implements Listener {
         getProxy().getPluginManager().registerCommand(this, new AdminChat());
         //register event listeners
         getProxy().getPluginManager().registerListener(this, new onChat());
-        getProxy().getPluginManager().registerListener(this, new onServerConnect());
+        getProxy().getPluginManager().registerListener(this, new onPostLogin());
         getProxy().getPluginManager().registerListener(this, new onPluginMessage());
         getProxy().getPluginManager().registerListener(this, new onTabComplete());
         //register calculation system listeners
@@ -99,6 +99,7 @@ public class BungeeMain extends Plugin implements Listener {
             getLogger().warning(prefix + ChatColor.RED + "Luck Perms not detected, Plugin has been Disabled!");
             getProxy().getPluginManager().unregisterCommands(this);
             getProxy().getPluginManager().unregisterListeners(this);
+            return;
         }
         //load all configs and create them if they don't exist
         loadConfig();

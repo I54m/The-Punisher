@@ -10,6 +10,7 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 
 public class ReputationSystem {
     private static BungeeMain plugin = BungeeMain.getInstance();
@@ -17,18 +18,18 @@ public class ReputationSystem {
 
     public static void minusRep(String targetname, String uuid, double amount) {
         if (!BungeeMain.RepStorage.contains(uuid)) {
-            BungeeMain.RepStorage.set(uuid, 5.0 - amount);
+            BungeeMain.RepStorage.set(uuid,  Double.valueOf(new DecimalFormat("##.##").format((5.0 - amount))));
             BungeeMain.saveRep();
         } else {
             double currentRep = BungeeMain.RepStorage.getDouble(uuid);
             if ((currentRep - amount) > -10 && (currentRep - amount) < 10) {
-                BungeeMain.RepStorage.set(uuid, (currentRep - amount));
+                BungeeMain.RepStorage.set(uuid,  Double.valueOf(new DecimalFormat("##.##").format((currentRep - amount))));
                 BungeeMain.saveRep();
             } else if ((currentRep - amount) > 10) {
-                BungeeMain.RepStorage.set(uuid, 10.0);
+                BungeeMain.RepStorage.set(uuid, 10.00);
                 BungeeMain.saveRep();
             } else if ((currentRep - amount) <= -10) {
-                BungeeMain.RepStorage.set(uuid, (currentRep - amount));
+                BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format((currentRep - amount))));
                 BungeeMain.saveRep();
                 length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
                 String reason = "Overly Toxic (reputation dropped below -10)";
@@ -94,18 +95,18 @@ public class ReputationSystem {
     }
     public static void addRep(String targetname, String uuid, double amount) {
         if (!BungeeMain.RepStorage.contains(uuid)){
-            BungeeMain.RepStorage.set(uuid, 5.0 + amount);
+            BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format((5.0 + amount))));
             BungeeMain.saveRep();
         }else {
             double currentRep = BungeeMain.RepStorage.getDouble(uuid);
             if ((currentRep + amount) > -10 && (currentRep + amount) < 10) {
-                BungeeMain.RepStorage.set(uuid, (currentRep + amount));
+                BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format((currentRep + amount))));
                 BungeeMain.saveRep();
             } else if ((currentRep + amount) > 10) {
-                BungeeMain.RepStorage.set(uuid, 10.0);
+                BungeeMain.RepStorage.set(uuid, 10.00);
                 BungeeMain.saveRep();
             } else if ((currentRep + amount) <= -10) {
-                BungeeMain.RepStorage.set(uuid, (currentRep + amount));
+                BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format((currentRep + amount))));
                 BungeeMain.saveRep();
                 length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
                 String reason = "Overly Toxic (reputation dropped below -10)";
@@ -170,14 +171,14 @@ public class ReputationSystem {
     }
     public static void setRep(String targetname, String uuid, double amount) {
         if (amount > 10){
-            BungeeMain.RepStorage.set(uuid, 10.0);
+            BungeeMain.RepStorage.set(uuid, 10.00);
             BungeeMain.saveRep();
         }else{
-            BungeeMain.RepStorage.set(uuid, amount);
+            BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format(amount)));
             BungeeMain.saveRep();
         }
         if (!(amount > -10)) {
-            BungeeMain.RepStorage.set(uuid, amount);
+            BungeeMain.RepStorage.set(uuid, Double.valueOf(new DecimalFormat("##.##").format(amount)));
             BungeeMain.saveRep();
             length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
             String reason = "Overly Toxic (reputation dropped below -10)";

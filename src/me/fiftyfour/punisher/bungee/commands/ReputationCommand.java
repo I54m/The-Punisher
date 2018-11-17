@@ -12,6 +12,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.text.DecimalFormat;
 import java.util.concurrent.*;
 
 public class ReputationCommand extends Command {
@@ -88,8 +89,8 @@ public class ReputationCommand extends Command {
                 double amount = Double.parseDouble(strings[2]);
                 ReputationSystem.addRep(name, uuid, amount);
                 String currentRep = ReputationSystem.getRep(uuid);
-                player.sendMessage(new ComponentBuilder(prefix).append("Added: " + amount + " to: " + name + "'s reputation").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + currentRep).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("Added: " + new DecimalFormat("##.##").format(amount) + " to: " + name + "'s reputation").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + new DecimalFormat("##.##").format(currentRep)).color(ChatColor.RED).create());
             }catch (NumberFormatException e){
                 player.sendMessage(new ComponentBuilder(prefix).append("That is not a valid amount!").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(prefix).append("Add/Minus/Set a player's reputation score").color(ChatColor.RED).append("\nUsage: /reputation <player> <add|minus|set> <amount>").color(ChatColor.WHITE).create());
@@ -99,8 +100,8 @@ public class ReputationCommand extends Command {
                 double amount = Double.parseDouble(strings[2]);
                 ReputationSystem.minusRep(name, uuid, amount);
                 String currentRep = ReputationSystem.getRep(uuid);
-                player.sendMessage(new ComponentBuilder(prefix).append("Removed: " + amount + " from: " + name + "'s reputation").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + currentRep).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("Removed: " + new DecimalFormat("##.##").format(amount) + " from: " + name + "'s reputation").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + new DecimalFormat("##.##").format(currentRep)).color(ChatColor.RED).create());
             }catch (NumberFormatException e){
                 player.sendMessage(new ComponentBuilder(prefix).append("That is not a valid amount!").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(prefix).append("Add/Minus/Set a player's reputation score").color(ChatColor.RED).append("\nUsage: /reputation <player> <add|minus|set> <amount>").color(ChatColor.WHITE).create());
@@ -109,8 +110,8 @@ public class ReputationCommand extends Command {
             try {
                 double amount = Double.parseDouble(strings[2]);
                 ReputationSystem.setRep(name, uuid, amount);
-                player.sendMessage(new ComponentBuilder(prefix).append("set: " + name + "'s reputation to: " + amount).color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + amount).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("Set: " + name + "'s reputation to: " + new DecimalFormat("##.##").format(amount)).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("New Reputation: " + new DecimalFormat("##.##").format(amount)).color(ChatColor.RED).create());
             } catch (NumberFormatException e) {
                 player.sendMessage(new ComponentBuilder(prefix).append("That is not a valid amount!").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(prefix).append("Add/Minus/Set a player's reputation score").color(ChatColor.RED).append("\nUsage: /reputation <player> <add|minus|set> <amount>").color(ChatColor.WHITE).create());

@@ -82,11 +82,11 @@ public class PunishmentCalc implements Listener {
                     plugin.getLogger().severe(prefix + "Event: OnPluginMessageReceived has thrown an exception more than 5 times!");
                     plugin.getLogger().severe(prefix + "Disabling event to prevent further damage to database!");
                     BungeeMain.Logs.severe("Event: OnPluginMessageReceived has thrown an exception more than 5 times!");
-                    BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                    BungeeMain.Logs.severe("Disabling event to prevent further damage to database!");
                     return;
                 }
                 if (plugin.testConnectionManual())
-                    plugin.getProxy().getPluginManager().callEvent(new PluginMessageEvent(e.getSender(), e.getReceiver(), e.getTag(), e.getData()));
+                    this.onPluginMessage(new PluginMessageEvent(e.getSender(), e.getReceiver(), e.getTag(), e.getData()));
             }
         }
     }

@@ -16,18 +16,25 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 public class onChat implements Listener {
     private BungeeMain plugin = BungeeMain.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+    private HashMap<ProxiedPlayer, Integer> sqlfails = new HashMap<>();
 
     @EventHandler
     public void onPlayerChat(ChatEvent event) {
         UUID uuid;
         String fetcheduuid;
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
+        int sqlfails;
+        if (this.sqlfails.get(player) == null)
+            sqlfails = 0;
+        else
+            sqlfails = this.sqlfails.get(player);
         ServerInfo server = player.getServer().getInfo();
         if (onPluginMessage.chatOffServers.contains(server)){
             if(!player.hasPermission("punisher.togglechat.bypass")){
@@ -64,7 +71,7 @@ public class onChat implements Listener {
                     stmt1.executeUpdate();
                     BungeeMain.Logs.info(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + player.getName() + " Bypassed mute");
                     StaffChat.sendMessage(player.getName() + " Bypassed their mute, Unmuting...");
-                    return;
+                    stmt1.close();
                 }
                 long mutetime = results.getLong("Length");
                 Long muteleftmillis = mutetime - System.currentTimeMillis();
@@ -78,6 +85,7 @@ public class onChat implements Listener {
                     stmt1.executeUpdate();
                     player.sendMessage(new ComponentBuilder(prefix).append("Your Mute has expired!").color(ChatColor.GREEN).create());
                     BungeeMain.Logs.info(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + player.getName() + "'s mute expired so was unmuted");
+                    stmt1.close();
                 } else {
                     if (event.isCommand()) {
                         String[] args = event.getMessage().split(" ");
@@ -113,10 +121,27 @@ public class onChat implements Listener {
                     }
                 }
             }
+            results.close();
+            stmt.close();
         } catch (SQLException e) {
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            this.sqlfails.put(player, sqlfails);
+            if (sqlfails > 5) {
+                plugin.getLogger().severe(prefix + onPostLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + player.getName() + "!");
+                plugin.getLogger().severe(prefix + "Cancelling player's message and returning to prevent further damage to database!");
+                BungeeMain.Logs.severe(onPostLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + player.getName() + "!");
+                BungeeMain.Logs.severe("Cancelling player's message and returning to prevent further damage to database!");
+                event.setCancelled(true);
+                player.sendMessage(new ComponentBuilder(prefix).append("We encountered an error multiple times while processing your chat message!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("To prevent further damage to our database we have cancelled the message!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("Please Contact an Admin+ ASAP!").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("If you are an Admin+ please check that the database connection is functional").color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(prefix).append("and that there are no errors in the database itself or config.yml!").color(ChatColor.RED).create());
+                return;
+            }
             if(plugin.testConnectionManual())
-            plugin.getProxy().getPluginManager().callEvent(new ChatEvent(event.getSender(), event.getReceiver(), event.getMessage()));
+                this.onPlayerChat(new ChatEvent(event.getSender(), event.getReceiver(), event.getMessage()));
         }
     }
 }

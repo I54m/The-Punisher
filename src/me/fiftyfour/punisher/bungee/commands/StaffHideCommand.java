@@ -22,6 +22,10 @@ public class StaffHideCommand extends Command {
             ProxiedPlayer player = (ProxiedPlayer) commandSender;
             if (strings.length >= 1) {
                 ProxiedPlayer target = ProxyServer.getInstance().getPlayer(strings[0]);
+                if (target == null){
+                    player.sendMessage(new ComponentBuilder(prefix).append("That player is not online!").color(ChatColor.RED).create());
+                    return;
+                }
                 if (player.hasPermission("punisher.staff.hide.others")) {
                     if (!BungeeMain.StaffHidden.contains(target.getUniqueId().toString())) {
                         BungeeMain.StaffHidden.set(target.getUniqueId().toString(), "hidden");

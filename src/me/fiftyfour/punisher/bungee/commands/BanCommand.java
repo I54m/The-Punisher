@@ -204,9 +204,20 @@ public class BanCommand extends Command {
             stmt.close();
             results.close();
         } catch (SQLException e) {
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if (sqlfails > 5) {
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
-                execute(commandSender, strings);
+                this.execute(commandSender, strings);
         }
         try {
             String sql = "SELECT * FROM `staffhistory` WHERE UUID='" + player.getUniqueId().toString().replace("-", "") + "'";
@@ -236,10 +247,20 @@ public class BanCommand extends Command {
             stmt2.close();
             results1.close();
         } catch (SQLException e) {
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if (sqlfails > 5) {
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         Long banleftmillis = length;
         int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
@@ -251,12 +272,10 @@ public class BanCommand extends Command {
             public void run() {
                 ProxiedPlayer target = ProxyServer.getInstance().getPlayer(UUIDFetcher.formatUUID(targetuuid));
                 if (target != null && target.isConnected()) {
-                    plugin.getLogger().info("target is not null?");
                     if (daysleft > 500) {
                         String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
                                 .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
                                 .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason.toString());
-                        plugin.getLogger().info(banMessage);
                         target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
                     } else {
                         String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
@@ -291,10 +310,20 @@ public class BanCommand extends Command {
             stmt.close();
             results.close();
         } catch (SQLException e) {
-            plugin.mysqlfail(e);
+            plugin.getLogger().severe(prefix + e);
+            sqlfails++;
+            if (sqlfails > 5) {
+                plugin.getProxy().getPluginManager().unregisterCommand(this);
+                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
+                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
+                plugin.getLogger().severe(prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
+                plugin.getLogger().severe(prefix + "Disabling command to prevent further damage to database!");
+                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
+                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
+                return;
+            }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
-            return;
         }
         BungeeMain.Logs.info(targetname + " Was Banned for: " + reason + " by: " + player.getName());
     }
