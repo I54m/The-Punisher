@@ -1,7 +1,7 @@
 name: The-Punisher
 author: 54mpenguin
 website: https://54mpenguin.com
-version: 1.5.5
+version: 1.6
 main: me.fiftyfour.punisher.bukkit.BukkitMain
 depend: [LuckPerms]
 description: The Spigot side of the Punisher plugin.
