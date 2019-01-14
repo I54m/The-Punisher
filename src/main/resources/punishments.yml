@@ -1,0 +1,174 @@
+#Punishment lengths are done in minutes (perm is 5.256e+7 which is one century)
+#specify the punishment type then length like so:
+#Minor Chat Offence:
+#  1: 'warn'
+#  2: 'mute'
+#  2length: 60
+#  3: 'mute'
+#  3length: 1440
+#  4: 'kick'
+#  5: 'ban'
+#  5length: 10080
+#for more on this please talk to 54mpenguin
+Minor_Chat_Offence:
+  1: 'warn'
+  2: 'mute'
+  2length: 60
+  3: 'mute'
+  3length: 1440
+  4: 'mute'
+  4length: 4320
+  5: 'mute'
+  5length: 10080
+Major_Chat_Offence:
+  1: 'warn'
+  2: 'mute'
+  2length: 1440
+  3: 'mute'
+  3length: 4320
+  4: 'mute'
+  4length: 10080
+  5: 'mute'
+  5length: 20160
+DDoS_DoX_Threats:
+  1: 'mute'
+  1length: 4320
+  2: 'mute'
+  2length: 10080
+  3: 'mute'
+  3length: 43200
+  4: 'mute'
+  4length: 5.256e+7
+  5: 'mute'
+  5length: 5.256e+7
+Inappropriate_Link:
+  1: 'mute'
+  1length: 4320
+  2: 'mute'
+  2length: 10080
+  3: 'mute'
+  3length: 43200
+  4: 'mute'
+  4length: 5.256e+7
+  5: 'mute'
+  5length: 5.256e+7
+Scamming:
+  1: 'mute'
+  1length: 1440
+  2: 'mute'
+  2length: 4320
+  3: 'mute'
+  3length: 10080
+  4: 'mute'
+  4length: 20160
+  5: 'mute'
+  5length: 20160
+X_Raying:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+AutoClicker:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Fly_Speed_Hacking:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Malicious_PvP_Hacks:
+  1: 'ban'
+  1length: 43200
+  2: 'ban'
+  2length: 5.256e+7
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Disallowed_Mods:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Server_Advertisment:
+  1: 'ban'
+  1length: 5.256e+7
+  2: 'ban'
+  2length: 5.256e+7
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Greifing:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Exploiting:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Tpa_Trapping:
+  1: 'ban'
+  1length: 10080
+  2: 'ban'
+  2length: 43200
+  3: 'ban'
+  3length: 5.256e+7
+  4: 'ban'
+  4length: 5.256e+7
+  5: 'ban'
+  5length: 5.256e+7
+Impersonation:
+  1: 'warn'
+  2: 'mute'
+  2length: 1440
+  3: 'mute'
+  3length: 4320
+  4: 'mute'
+  4length: 10080
+  5: 'mute'
+  5length: 20160
