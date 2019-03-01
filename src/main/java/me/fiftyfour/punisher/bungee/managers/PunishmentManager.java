@@ -51,17 +51,13 @@ public class PunishmentManager {
         if (targetname == null) NameFetcher.getName(targetuuid);
         long duration = 0;
         if (type != Punishment.Type.KICK && type != Punishment.Type.WARN) {
-            plugin.getLogger().info("type != WARN || KICK");
             if (punishment.getDuration() == 0){
-                plugin.getLogger().info("punishment.getDuration() == 0");
                 duration = (calculateDuration(reason, targetuuid) + System.currentTimeMillis());
             }
             else{
-                plugin.getLogger().info("punishment.getDuration() != 0");
                 duration = (punishment.getDuration() + System.currentTimeMillis());
             }
         }
-        plugin.getLogger().info("Duration = " + duration);
         double repLoss;
         if (type == Punishment.Type.ALL) repLoss = calculateRepLoss(reason, Punishment.Type.ALL, targetuuid);
         else repLoss = calculateRepLoss(reason, type, targetuuid);
@@ -281,7 +277,6 @@ public class PunishmentManager {
                     return;
             }
             case BAN: {
-                plugin.getLogger().info("Duration = " + duration);
                 target = plugin.getProxy().getPlayer(UUIDFetcher.formatUUID(targetuuid));
                 String reasonMessage;
                 if (punishment.getMessage() != null) {
@@ -321,7 +316,6 @@ public class PunishmentManager {
                     incrementHistory(targetuuid, reason);
                     incrementStaffHistory(punisherUUID, reason);
                 }
-                plugin.getLogger().info("Duration = " + duration);
                 if (isBanned(targetuuid)) {
                     String sql1 = "UPDATE `bans` SET `UUID`='" + targetuuid + "', `Name`='" + targetname + "', `Length`='" + (duration + System.currentTimeMillis()) +
                             "', `Reason`='" + reason.toString() + "', `Message`='" + reasonMessage +  "', `Punisher`='" + punisherUUID + "' WHERE `UUID`='" + targetuuid + "';";
@@ -335,7 +329,6 @@ public class PunishmentManager {
                     stmt1.executeUpdate();
                     stmt1.close();
                 }
-                plugin.getLogger().info("Duration = " + duration);
                 punishment.setDuration(duration);
                 BanCache.put(targetuuid, punishment);
                 if (player != null && player.isConnected()) {
