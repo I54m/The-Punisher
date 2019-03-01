@@ -79,6 +79,10 @@ public class SeenCommand extends Command {
                 targetname = strings[0];
             }
         }
+        if (!BungeeMain.InfoConfig.contains(targetuuid)){
+            commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + " has not joined the server yet!").color(ChatColor.RED).create());
+            return;
+        }
         long lastlogin = (System.currentTimeMillis() - BungeeMain.InfoConfig.getLong(targetuuid + ".lastlogin"));
         long lastlogout = (System.currentTimeMillis() - BungeeMain.InfoConfig.getLong(targetuuid + ".lastlogout"));
         String lastloginString, lastlogoutString;
