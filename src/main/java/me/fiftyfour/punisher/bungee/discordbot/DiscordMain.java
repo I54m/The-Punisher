@@ -45,6 +45,8 @@ public class DiscordMain {
                 ProxyServer.getInstance().getPluginManager().registerListener(plugin, new PlayerDisconnect());
                 ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
                     TextChannel loggingChannel = DiscordMain.jda.getTextChannelById(BungeeMain.PunisherConfig.getString("DiscordIntegration.JoinLoggingChannelId"));
+                    if (loggingChannel == null)
+                        throw new NullPointerException("Could not find logging channel!");
                     loggingChannel.getManager().setTopic(ProxyServer.getInstance().getPlayers().size() + " players online | "
                             + me.fiftyfour.punisher.bungee.listeners.ServerConnect.lastJoinId + " unique players ever joined").queue();
                 }, 10, 5, TimeUnit.SECONDS);
