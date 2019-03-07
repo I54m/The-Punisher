@@ -168,14 +168,14 @@ permissions:
  punisher.discord:
   description: allows the player to use /discord commands.
   
-punisher.discord.admin:
- description: allows the players to use discord admin commands.
+ punisher.discord.admin:
+  description: allows the players to use discord admin commands.
 
-punisher.playerinfo:
- description: allows the player to use /playerinfo commands.
+ punisher.playerinfo:
+  description: allows the player to use /playerinfo commands.
 
-punisher.seen:
- description: allows the player to use /seen.
+ punisher.seen:
+  description: allows the player to use /seen.
 
-punisher.notes:
- description: allows the player to add, remove and view notes.
+ punisher.notes:
+  description: allows the player to add, remove and view notes.
