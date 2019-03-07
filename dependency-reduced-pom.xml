@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>me.fiftyfour.punisher</groupId>
   <artifactId>The-Punisher</artifactId>
-  <version>1.7-BETA</version>
+  <version>1.7.4-BETA</version>
   <build>
     <resources>
       <resource>

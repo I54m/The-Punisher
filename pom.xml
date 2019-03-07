@@ -6,7 +6,7 @@
 
     <groupId>me.fiftyfour.punisher</groupId>
     <artifactId>The-Punisher</artifactId>
-    <version>1.7.1-BETA</version>
+    <version>1.7.4-BETA</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
