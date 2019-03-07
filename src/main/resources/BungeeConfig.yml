@@ -160,6 +160,7 @@ Voting:
 DiscordIntegration:
   Enabled: true
   BotToken: "<insert bot token here>"
+  GuildId: "<insert guild Id here>"
   Playing: "your.server.com"
   JoinLink: "http://your-discord-join-link.com"
   RolesIdsToAddToLinkedUser:

@@ -2,6 +2,7 @@ package me.fiftyfour.punisher.bungee.discordbot.listeners;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.discordbot.DiscordMain;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
@@ -25,18 +26,19 @@ public class ServerConnect implements Listener {
                 ArrayList<Role> rolestoadd = new ArrayList<>();
                 ArrayList<Role> rolestoremove = new ArrayList<>();
                 User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(player.getUniqueId()));
+                Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
                 for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")){
-                    user.getMutualGuilds().forEach((guild -> guild.getMember(user).getRoles().forEach((role -> {
+                    guild.getMember(user).getRoles().forEach((role -> {
                         if (roleids.equals(role.getId()) && !player.hasPermission("punisher.discord.role." + roleids)){
                             rolestoremove.add(role);
                         }
-                    }))));
+                    }));
                     if (player.hasPermission("punisher.discord.role." + roleids)){
                         rolestoadd.add(DiscordMain.jda.getRoleById(roleids));
                     }
                 }
-                user.getMutualGuilds().forEach((guild -> guild.getController().addRolesToMember(guild.getMember(user), rolestoadd).queue()));
-                user.getMutualGuilds().forEach((guild -> guild.getController().removeRolesFromMember(guild.getMember(user), rolestoremove).queue()));
+                guild.getController().addRolesToMember(guild.getMember(user), rolestoadd).queue();
+                guild.getController().removeRolesFromMember(guild.getMember(user), rolestoremove).queue();
             });
         }
         if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableJoinLogging")) {

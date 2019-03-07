@@ -7,6 +7,7 @@ import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
@@ -60,17 +61,19 @@ public class DiscordMain {
                                 ArrayList<Role> rolestoremove = new ArrayList<>();
                                 User user = jda.getUserById(verifiedUsers.get(player.getUniqueId()));
                                 for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")) {
-                                    user.getMutualGuilds().forEach((guild -> guild.getMember(user).getRoles().forEach((role -> {
+                                    Guild guild = jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
+                                     guild.getMember(user).getRoles().forEach((role -> {
                                         if (roleids.equals(role.getId()) && !player.hasPermission("punisher.discord.role." + roleids)) {
                                             rolestoremove.add(role);
                                         }
-                                    }))));
+                                    }));
                                     if (player.hasPermission("punisher.discord.role." + roleids)) {
                                         rolestoadd.add(jda.getRoleById(roleids));
                                     }
                                 }
-                                user.getMutualGuilds().forEach((guild -> guild.getController().addRolesToMember(guild.getMember(user), rolestoadd).queue()));
-                                user.getMutualGuilds().forEach((guild -> guild.getController().removeRolesFromMember(guild.getMember(user), rolestoremove).queue()));
+                                Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
+                                guild.getController().addRolesToMember(guild.getMember(user), rolestoadd).queue();
+                                guild.getController().removeRolesFromMember(guild.getMember(user), rolestoremove).queue();
                             }
                         }
                     })
@@ -82,13 +85,12 @@ public class DiscordMain {
             updateTasks.add(ProxyServer.getInstance().getScheduler().schedule(plugin, () ->
                 verifiedUsers.forEach(((uuid, id) -> {
                     User user = jda.getUserById(id);
-                    user.getMutualGuilds().forEach((guild -> {
-                        List<Role> rolesToAdd = new ArrayList<>();
-                        for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
-                            rolesToAdd.add(guild.getRoleById(roleids));
-                        }
-                        guild.getController().addRolesToMember(guild.getMember(user), rolesToAdd).queue();
-                    }));
+                    Guild guild = jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
+                    List<Role> rolesToAdd = new ArrayList<>();
+                    for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
+                        rolesToAdd.add(guild.getRoleById(roleids));
+                    }
+                    guild.getController().addRolesToMember(guild.getMember(user), rolesToAdd).queue();
                 }))
             , 1, 1, TimeUnit.MINUTES));
             try {

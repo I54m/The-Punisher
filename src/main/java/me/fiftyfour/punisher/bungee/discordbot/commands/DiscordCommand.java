@@ -62,16 +62,15 @@ public class DiscordCommand extends Command {
                             User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(player.getUniqueId()));
                             DiscordMain.verifiedUsers.remove(player.getUniqueId());
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unlinked from discord user: " + user.getName() + "#" + user.getDiscriminator()).color(ChatColor.RED).create());
-                            for (Guild guild : user.getMutualGuilds()){
-                                List<Role> rolesToRemove = new ArrayList<>();
-                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
-                                    rolesToRemove.add(guild.getRoleById(roleids));
-                                }
-                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")){
-                                    rolesToRemove.add(guild.getRoleById(roleids));
-                                }
-                                guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
+                            Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
+                            List<Role> rolesToRemove = new ArrayList<>();
+                            for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
+                                rolesToRemove.add(guild.getRoleById(roleids));
                             }
+                            for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")){
+                                rolesToRemove.add(guild.getRoleById(roleids));
+                            }
+                            guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
                         }else{
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("You are not Linked to a discord user!").color(ChatColor.RED).create());
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("To link a discord user do \"/discord link\"").color(ChatColor.GREEN).create());
@@ -228,16 +227,15 @@ public class DiscordCommand extends Command {
                                                 User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(UUIDFetcher.formatUUID(targetuuid)));
                                                 DiscordMain.verifiedUsers.remove(player.getUniqueId());
                                                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unlinked " + targetName + "  from discord user: " + user.getName() + "#" + user.getDiscriminator()).color(ChatColor.RED).create());
-                                                for (Guild guild : user.getMutualGuilds()) {
-                                                    List<Role> rolesToRemove = new ArrayList<>();
-                                                    for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
-                                                        rolesToRemove.add(guild.getRoleById(roleids));
-                                                    }
-                                                    for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")) {
-                                                        rolesToRemove.add(guild.getRoleById(roleids));
-                                                    }
-                                                    guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
+                                                Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
+                                                List<Role> rolesToRemove = new ArrayList<>();
+                                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
+                                                    rolesToRemove.add(guild.getRoleById(roleids));
                                                 }
+                                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")) {
+                                                    rolesToRemove.add(guild.getRoleById(roleids));
+                                                }
+                                                guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
                                             } else {
                                                 player.sendMessage(new ComponentBuilder(plugin.prefix).append(targetName + " is not yet Linked to a discord user!").color(ChatColor.RED).create());
                                             }
