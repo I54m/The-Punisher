@@ -148,13 +148,13 @@ public class PlayerLogin implements Listener {
                     ResultSet results = stmt.executeQuery();
                     if (results.next()){
                         if (!results.getString("ip").equals(connection.getAddress().getHostString())){
-                            String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostName() + "');";
+                            String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostString() + "');";
                             PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
                             addipstmt.executeUpdate();
                             addipstmt.close();
                         }
                     }else{
-                        String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostName() + "');";
+                        String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostString() + "');";
                         PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
                         addipstmt.executeUpdate();
                         addipstmt.close();
