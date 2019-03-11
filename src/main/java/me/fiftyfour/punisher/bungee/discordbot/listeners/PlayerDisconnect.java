@@ -14,6 +14,7 @@ public class PlayerDisconnect implements Listener {
 
     @EventHandler
     public void onPlayerDisconnect(PlayerDisconnectEvent event){
+        if (DiscordMain.jda == null) return;
         ProxiedPlayer player = event.getPlayer();
         if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableJoinLogging")) {
             TextChannel loggingChannel = DiscordMain.jda.getTextChannelById(BungeeMain.PunisherConfig.getString("DiscordIntegration.JoinLoggingChannelId"));

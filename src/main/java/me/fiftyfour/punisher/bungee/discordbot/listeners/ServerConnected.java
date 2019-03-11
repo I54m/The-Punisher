@@ -13,6 +13,7 @@ public class ServerConnected implements Listener {
 
     @EventHandler
     public void onServerConnected(ServerConnectedEvent event){
+        if (DiscordMain.jda == null) return;
         ProxiedPlayer player = event.getPlayer();
         ServerInfo server = event.getServer().getInfo();
         TextChannel loggingChannel = DiscordMain.jda.getTextChannelById(BungeeMain.PunisherConfig.getString("DiscordIntegration.JoinLoggingChannelId"));

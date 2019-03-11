@@ -20,6 +20,7 @@ public class ServerConnect implements Listener {
 
     @EventHandler
     public void onServerConnect(ServerConnectEvent event){
+        if (DiscordMain.jda == null) return;
         ProxiedPlayer player = event.getPlayer();
         if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableRoleSync") && DiscordMain.verifiedUsers.containsKey(player.getUniqueId()) && event.getReason() == ServerConnectEvent.Reason.JOIN_PROXY){
             ProxyServer.getInstance().getScheduler().runAsync(plugin, () ->{

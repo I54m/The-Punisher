@@ -19,7 +19,7 @@ public class BotReady extends ListenerAdapter {
 
     @Override
     public void onReady(ReadyEvent event) {
-        ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
+        DiscordMain.updateTasks.add(ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
             switch (status) {
                 case 1:
                     DiscordMain.jda.getPresence().setGame(Game.watching(punishMngr.totalBans() + " Bans!"));
@@ -58,10 +58,10 @@ public class BotReady extends ListenerAdapter {
                     status ++;
                     return;
                 case 10:
-                    DiscordMain.jda.getPresence().setGame(Game.playing(plugin.getDescription().getVersion()));
+                    DiscordMain.jda.getPresence().setGame(Game.playing("v" + plugin.getDescription().getVersion()));
                     status = 1;
 
             }
-        }, 1, 10, TimeUnit.SECONDS);
+        }, 1, 10, TimeUnit.SECONDS));
     }
 }

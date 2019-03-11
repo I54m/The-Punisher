@@ -31,7 +31,8 @@ public class DiscordMain {
     public static Map<UUID, String> userCodes = new HashMap<>();
     public static Map<UUID, String> verifiedUsers = new HashMap<>();
     private static final Yaml YAML_LOADER = new Yaml();
-    private static List<ScheduledTask> updateTasks = new ArrayList<>();
+    public static List<ScheduledTask> updateTasks = new ArrayList<>();
+    private static boolean firstenable = true;
     private static PunishmentManager punishMngr = PunishmentManager.getInstance();
 
     public static void startBot(){
@@ -40,17 +41,20 @@ public class DiscordMain {
             jda = new JDABuilder(AccountType.BOT).setToken(BungeeMain.PunisherConfig.getString("DiscordIntegration.BotToken")).build();
             jda.addEventListener(new BotReady());
             jda.addEventListener(new PrivateMessageReceived());
-            ProxyServer.getInstance().getPluginManager().registerCommand(plugin, new DiscordCommand());
+            if (firstenable) {
+                ProxyServer.getInstance().getPluginManager().registerCommand(plugin, new DiscordCommand());
+                firstenable = false;
+            }
             if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableJoinLogging")) {
                 ProxyServer.getInstance().getPluginManager().registerListener(plugin, new ServerConnected());
                 ProxyServer.getInstance().getPluginManager().registerListener(plugin, new PlayerDisconnect());
-                ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
+                updateTasks.add(ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
                     TextChannel loggingChannel = DiscordMain.jda.getTextChannelById(BungeeMain.PunisherConfig.getString("DiscordIntegration.JoinLoggingChannelId"));
                     if (loggingChannel == null)
                         throw new NullPointerException("Could not find logging channel!");
                     loggingChannel.getManager().setTopic(ProxyServer.getInstance().getPlayers().size() + " players online | "
                             + me.fiftyfour.punisher.bungee.listeners.ServerConnect.lastJoinId + " unique players ever joined").queue();
-                }, 10, 5, TimeUnit.SECONDS);
+                }, 10, 5, TimeUnit.SECONDS));
             }
             if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableRoleSync")){
                 updateTasks.add(ProxyServer.getInstance().getScheduler().schedule(plugin, () ->
@@ -117,9 +121,11 @@ public class DiscordMain {
             }
             jda.shutdownNow();
             jda = null;
+            ProxyServer.getInstance().getPluginManager().unregisterListener(new ServerConnected());
+            ProxyServer.getInstance().getPluginManager().unregisterListener(new PlayerDisconnect());
+            ProxyServer.getInstance().getPluginManager().unregisterListener(new ServerConnect());
             for (ScheduledTask task : updateTasks)
                 task.cancel();
-            ProxyServer.getInstance().getPluginManager().unregisterCommand(new DiscordCommand());
             plugin.getLogger().info(plugin.prefix + ChatColor.GREEN + "Discord bot Shut down!");
         }
     }

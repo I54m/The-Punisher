@@ -34,6 +34,22 @@ public class DiscordCommand extends Command {
         if (commandSender instanceof ProxiedPlayer){
             ProxiedPlayer player = (ProxiedPlayer) commandSender;
             if (strings.length > 0){
+                if (DiscordMain.jda == null){
+                    if (player.hasPermission("punisher.discord.admin")) {
+                        if (strings.length > 1){
+                            if (!strings[0].equals("admin") && !strings[1].equals("enable")){
+                                player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord integration is currently disabled, Do /discord admin enable to re-enable it!").color(ChatColor.RED).create());
+                                return;
+                            }
+                        }else {
+                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord integration is currently disabled, Do /discord admin enable to re-enable it!").color(ChatColor.RED).create());
+                            return;
+                        }
+                    }else if (!player.hasPermission("punisher.discord.admin")){
+                        player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord integration is currently disabled!").color(ChatColor.RED).create());
+                        return;
+                    }
+                }
                 switch (strings[0].toLowerCase()){
                     case "link":
                         if (!DiscordMain.verifiedUsers.containsKey(player.getUniqueId())) {
@@ -48,8 +64,8 @@ public class DiscordCommand extends Command {
                             for (char charcter : chars) {
                                 string.append(charcter);
                             }
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("Please private message " + DiscordMain.jda.getSelfUser().getName() + " Bot on discord with this code to complete the link.").color(ChatColor.GREEN)
-                                    .append("\nCODE: " + string.toString()).bold(true).color(ChatColor.GREEN).create());
+                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("Please private message " + DiscordMain.jda.getSelfUser().getName() + "#" + DiscordMain.jda.getSelfUser().getDiscriminator() + " Bot on discord with this code to complete the link.").color(ChatColor.GREEN)
+                                    .append("\nCODE: ").bold(true).color(ChatColor.GREEN).append(string.toString()).color(ChatColor.GREEN).bold(false).create());
                             DiscordMain.userCodes.put(player.getUniqueId(), string.toString());
                         }else{
                             User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(player.getUniqueId()));
@@ -257,11 +273,17 @@ public class DiscordCommand extends Command {
                         }
                 }
             }
-            player.sendMessage(new ComponentBuilder("|-----").color(ChatColor.AQUA).strikethrough(true).append(" Discord Integration Commands").color(ChatColor.BLUE).strikethrough(false).bold(true).append(" -----|").color(ChatColor.AQUA).bold(false).strikethrough(true).create());
-            player.sendMessage(new ComponentBuilder("/discord link").color(ChatColor.AQUA).append(" - link your minecraft account to your discord").color(ChatColor.WHITE).create());
-            player.sendMessage(new ComponentBuilder("/discord unlink").color(ChatColor.AQUA).append(" - unlink your minecraft and discord accounts").color(ChatColor.WHITE).create());
-            player.sendMessage(new ComponentBuilder("/discord linked").color(ChatColor.AQUA).append(" - view the currently linked discord account").color(ChatColor.WHITE).create());
-            player.sendMessage(new ComponentBuilder("/discord help").color(ChatColor.AQUA).append(" - view this help menu").color(ChatColor.WHITE).create());
+            if (DiscordMain.jda != null) {
+                player.sendMessage(new ComponentBuilder("|-----").color(ChatColor.AQUA).strikethrough(true).append(" Discord Integration Commands").color(ChatColor.BLUE).strikethrough(false).bold(true).append(" -----|").color(ChatColor.AQUA).bold(false).strikethrough(true).create());
+                player.sendMessage(new ComponentBuilder("/discord link").color(ChatColor.AQUA).append(" - link your minecraft account to your discord").color(ChatColor.WHITE).create());
+                player.sendMessage(new ComponentBuilder("/discord unlink").color(ChatColor.AQUA).append(" - unlink your minecraft and discord accounts").color(ChatColor.WHITE).create());
+                player.sendMessage(new ComponentBuilder("/discord linked").color(ChatColor.AQUA).append(" - view the currently linked discord account").color(ChatColor.WHITE).create());
+                player.sendMessage(new ComponentBuilder("/discord help").color(ChatColor.AQUA).append(" - view this help menu").color(ChatColor.WHITE).create());
+            }else if (!player.hasPermission("punisher.admin")){
+                player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord integration is currently disabled!").color(ChatColor.RED).create());
+            }else if (player.hasPermission("punisher.admin")){
+                player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord integration is currently disabled, Do /discord admin enable to re-enable it!").color(ChatColor.RED).create());
+            }
         }else{
             commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
         }
