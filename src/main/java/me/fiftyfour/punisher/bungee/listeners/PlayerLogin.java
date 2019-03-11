@@ -79,9 +79,6 @@ public class PlayerLogin implements Listener {
             ContextManager cm = LuckPerms.getApi().getContextManager();
             Contexts contexts = cm.lookupApplicableContexts(user).orElse(cm.getStaticContexts());
             PermissionData permissionData = user.getCachedData().getPermissionData(contexts);
-            if (!BungeeMain.RepStorage.contains(fetcheduuid)) {
-                BungeeMain.RepStorage.set(fetcheduuid, 5.0);
-            }
             if (punishmngr.isBanned(fetcheduuid)) {
                 if (permissionData.getPermissionValue("punisher.bypass").asBoolean()) {
                     punishmngr.revoke(punishmngr.getBan(fetcheduuid), null, targetName, true, false);
@@ -121,44 +118,59 @@ public class PlayerLogin implements Listener {
             }
             event.completeIntent(plugin);
             plugin.getProxy().getScheduler().runAsync(plugin, () -> {
-                try {
-                    //update ip and make sure there is one in the database
-                    String sqlip = "SELECT * FROM `altlist` WHERE UUID='" + fetcheduuid + "'";
-                    PreparedStatement stmtip = plugin.connection.prepareStatement(sqlip);
-                    ResultSet resultsip = stmtip.executeQuery();
-                    if (resultsip.next()) {
-                        if (!resultsip.getString("ip").equals(connection.getAddress().getHostString())) {
-                            String oldip = resultsip.getString("ip");
-                            String sqlipadd = "UPDATE `altlist` SET `ip`='" + connection.getAddress().getHostString() + "' WHERE `ip`='" + oldip + "' ;";
-                            PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
-                            stmtipadd.executeUpdate();
-                            stmtipadd.close();
+                plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+                    try {
+                        //update ip and make sure there is one in the database
+                        String sqlip = "SELECT * FROM `altlist` WHERE UUID='" + fetcheduuid + "'";
+                        PreparedStatement stmtip = plugin.connection.prepareStatement(sqlip);
+                        ResultSet resultsip = stmtip.executeQuery();
+                        if (resultsip.next()) {
+                            if (!resultsip.getString("ip").equals(connection.getAddress().getHostString())) {
+                                String oldip = resultsip.getString("ip");
+                                String sqlipadd = "UPDATE `altlist` SET `ip`='" + connection.getAddress().getHostString() + "' WHERE `ip`='" + oldip + "' ;";
+                                PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
+                                stmtipadd.executeUpdate();
+                                stmtipadd.close();
+                            }
+                        } else {
+                            String sql1 = "INSERT INTO `altlist` (`UUID`, `ip`) VALUES ('" + fetcheduuid + "', '" + connection.getAddress().getHostString() + "');";
+                            PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                            stmt1.executeUpdate();
+                            stmt1.close();
                         }
-                    } else {
-                        String sql1 = "INSERT INTO `altlist` (`UUID`, `ip`) VALUES ('" + fetcheduuid + "', '" + connection.getAddress().getHostString() + "');";
-                        PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
-                        stmt1.executeUpdate();
-                        stmt1.close();
+                        stmtip.close();
+                        resultsip.close();
+                    } catch (SQLException sqle) {
+                        sqlException(sqle, event, targetName);
                     }
-                    stmtip.close();
-                    resultsip.close();
-                    //update ip hist
-                    String sql = "SELECT * FROM `iphist` WHERE UUID='" + fetcheduuid + "'";
-                    PreparedStatement stmt = plugin.connection.prepareStatement(sql);
-                    ResultSet results = stmt.executeQuery();
-                    if (results.next()){
-                        if (!results.getString("ip").equals(connection.getAddress().getHostString())){
+                });
+                plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+                    try {
+                        //update ip hist
+                        String sql = "SELECT * FROM `iphist` WHERE UUID='" + fetcheduuid + "'";
+                        PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                        ResultSet results = stmt.executeQuery();
+                        if (results.next()) {
+                            if (!results.getString("ip").equals(connection.getAddress().getHostString())) {
+                                String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostString() + "');";
+                                PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
+                                addipstmt.executeUpdate();
+                                addipstmt.close();
+                            }
+                        } else {
                             String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostString() + "');";
                             PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
                             addipstmt.executeUpdate();
                             addipstmt.close();
                         }
-                    }else{
-                        String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getHostString() + "');";
-                        PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
-                        addipstmt.executeUpdate();
-                        addipstmt.close();
+                    } catch (SQLException sqle) {
+                        sqlException(sqle, event, targetName);
                     }
+                });
+                if (!BungeeMain.RepStorage.contains(fetcheduuid)) {
+                    BungeeMain.RepStorage.set(fetcheduuid, 5.0);
+                }
+                try {
                     //check for banned alts
                     String ip = connection.getAddress().getHostString();
                     String sqlip1 = "SELECT * FROM `altlist` WHERE ip='" + ip + "'";
@@ -182,50 +194,26 @@ public class PlayerLogin implements Listener {
                             plugin.getProxy().getScheduler().schedule(plugin, () -> StaffChat.sendMessage(targetName + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", "")), 3, TimeUnit.SECONDS);
                         }
                     }
-                }catch (SQLException sqle){
-                    plugin.getLogger().severe(plugin.prefix + sqle);
-                    int sqlfailsAsync;
-                    if (this.sqlfails.get(uuid) == null)
-                        sqlfailsAsync = 0;
-                    else
-                        sqlfailsAsync = this.sqlfails.get(uuid);
-                    sqlfailsAsync++;
-                    this.sqlfails.put(uuid, sqlfailsAsync);
-                    if (sqlfailsAsync > 5) {
-                        plugin.getLogger().severe(plugin.prefix + PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + targetName + "!");
-                        plugin.getLogger().severe(plugin.prefix + "kicking player and returning to prevent further damage to database!");
-                        BungeeMain.Logs.severe(PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + targetName + "!");
-                        BungeeMain.Logs.severe("kicking player and returning to prevent further damage to database!");
-                        event.getConnection().disconnect(new TextComponent(plugin.prefix + "\n" + ChatColor.RED + "We encountered an error multiple times while processing your login!" +
-                                "\nTo prevent further damage to our database we have kicked you!" +
-                                "\nPlease Contact an Admin+ ASAP!" +
-                                "\nIf you are an Admin+ please check that the database connection is functional" +
-                                "\nand that there are no errors in the database itself or config.yml!"));
-                        return;
-                    }
-                    if (plugin.testConnectionManual())
-                        this.onLogin(event);
+                } catch (SQLException sqle) {
+                    sqlException(sqle, event, targetName);
                 }
             });
         } catch (SQLException e) {
-            plugin.getLogger().severe(plugin.prefix + e);
-            sqlfails++;
-            PlayerLogin.this.sqlfails.put(uuid, sqlfails);
-            if (sqlfails > 5) {
-                plugin.getLogger().severe(plugin.prefix + PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + targetName + "!");
-                plugin.getLogger().severe(plugin.prefix + "kicking player and returning to prevent further damage to database!");
-                BungeeMain.Logs.severe(PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + targetName + "!");
-                BungeeMain.Logs.severe("kicking player and returning to prevent further damage to database!");
-                event.setCancelled(true);
-                event.getConnection().disconnect(new TextComponent(plugin.prefix + "\n" + ChatColor.RED + "We encountered an error multiple times while processing your login!" +
-                        "\nTo prevent further damage to our database we have kicked you!" +
-                        "\nPlease Contact an Admin+ ASAP!" +
-                        "\nIf you are an Admin+ please check that the database connection is functional" +
-                        "\nand that there are no errors in the database itself or config.yml!"));
-                return;
-            }
-            if (plugin.testConnectionManual())
-                this.onLogin(event);
+            sqlException(e, event, targetName);
+            event.completeIntent(plugin);
         }
+    }
+
+    private void sqlException(SQLException e, LoginEvent event, String targetName) {
+        plugin.getLogger().severe(plugin.prefix + e);
+        plugin.getLogger().severe(plugin.prefix + PlayerLogin.class.getName() + " has thrown an exception while processing login for: " + targetName + "!");
+        plugin.getLogger().severe(plugin.prefix + "kicking player and returning to prevent further damage to database!");
+        BungeeMain.Logs.severe(PlayerLogin.class.getName() + " has thrown an exception while processing login for: " + targetName + "!");
+        BungeeMain.Logs.severe("kicking player and returning to prevent further damage to database!");
+        event.getConnection().disconnect(new TextComponent(plugin.prefix + "\n" + ChatColor.RED + "We encountered an error while processing your login!" +
+                "\nTo prevent further damage to our database we have kicked you!" +
+                "\nPlease Contact an Admin+ ASAP!" +
+                "\nIf you are an Admin+ please check that the database connection is functional" +
+                "\nand that there are no errors in the database itself or config.yml!"));
     }
 }
