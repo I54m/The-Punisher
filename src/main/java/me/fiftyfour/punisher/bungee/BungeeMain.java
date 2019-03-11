@@ -228,6 +228,8 @@ public class BungeeMain extends Plugin implements Listener {
     public void onDisable() {
         if (punManager.cacheTask != null)
             punManager.cacheTask.cancel();
+        ProxyServer.getInstance().getPluginManager().unregisterListeners(this);
+        ProxyServer.getInstance().getPluginManager().unregisterCommands(this);
         DiscordMain.shutdown();
         Logs.info("****END OF LOGS ENDING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
         LogsHandler.close();
