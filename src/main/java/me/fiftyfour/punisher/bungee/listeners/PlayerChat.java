@@ -58,7 +58,7 @@ public class PlayerChat implements Listener {
         String targetname = player.getName();
         try {
             if (punishmentManager.isMuted(fetcheduuid)) {
-                Punishment mute = punishmentManager.getBan(fetcheduuid);
+                Punishment mute = punishmentManager.getMute(fetcheduuid);
                 if (player.hasPermission("punisher.bypass")) {
                     punishmentManager.revoke(mute, null, targetname, true, false);
                     StaffChat.sendMessage(player.getName() + " Bypassed their mute, Unmuting...");
