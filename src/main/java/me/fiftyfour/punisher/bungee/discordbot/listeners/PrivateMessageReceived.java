@@ -54,5 +54,6 @@ public class PrivateMessageReceived extends ListenerAdapter {
                 "\nTo unlink this minecraft account type \"/discord unlink\" in game").queue();
         if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableRoleSync"))
             channel.sendMessage("Login to the server to get your ranks synced over to the discord server").queue();
+        DiscordMain.verifiedUsers.put(uuid, user.getId());
     }
 }
