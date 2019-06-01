@@ -40,18 +40,17 @@ public class BukkitMain extends JavaPlugin implements Listener {
         //Check if version of mc is compatible
         if (this.getServer().getVersion().contains("1.13")){
             getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft 1.13.x");
-            getServer().getConsoleSender().sendMessage("Due to major data changes in 1.13 there are items in the gui that no longer work");
             getServer().getConsoleSender().sendMessage("Please downgrade to 1.12.2 to get this version to work!");
-            getServer().getConsoleSender().sendMessage("Other compatible versions include: 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+            getServer().getConsoleSender().sendMessage("Or update to the punisher 1.9+ to use this spigot version.");
+            getServer().getConsoleSender().sendMessage("Other compatible spigot versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
             getServer().getConsoleSender().sendMessage("Plugin Disabled!");
             this.setEnabled(false);
             return;
         }else if (!this.getServer().getVersion().contains("1.12") && !this.getServer().getVersion().contains("1.11") && !this.getServer().getVersion().contains("1.10")
         && !this.getServer().getVersion().contains("1.9") && !this.getServer().getVersion().contains("1.8")){
             getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft " + this.getServer().getVersion());
-            getServer().getConsoleSender().sendMessage("Due to items that are not available in this version there are items in the gui that no longer work");
             getServer().getConsoleSender().sendMessage("Please upgrade to 1.8.8 to get this version to work!");
-            getServer().getConsoleSender().sendMessage("Other compatible versions include: 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+            getServer().getConsoleSender().sendMessage("Other compatible versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
             getServer().getConsoleSender().sendMessage("Plugin Disabled!");
             this.setEnabled(false);
             return;
@@ -102,7 +101,13 @@ public class BukkitMain extends JavaPlugin implements Listener {
             } catch (Exception e) {
                 getServer().getConsoleSender().sendMessage(ChatColor.RED + e.getMessage());
             }
-        }else{
+        } if (this.getDescription().getVersion().contains("LEGACY")){
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have the new features.");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
+            update = false;
+        } else {
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The Punisher");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
             update = false;
