@@ -2,6 +2,8 @@ package me.fiftyfour.punisher.bungee.listeners;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
@@ -23,7 +25,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 public class PlayerLogin implements Listener {
     private BungeeMain plugin = BungeeMain.getInstance();
-    private HashMap<UUID, Integer> sqlfails = new HashMap<>();
     private PunishmentManager punishmngr = PunishmentManager.getInstance();
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -42,11 +42,6 @@ public class PlayerLogin implements Listener {
         String fetcheduuid = uuid.toString().replace("-", "");
         PendingConnection connection = event.getConnection();
         ArrayList<String> altslist = new ArrayList<>();
-        int sqlfails;
-        if (this.sqlfails.get(uuid) == null)
-            sqlfails = 0;
-        else
-            sqlfails = this.sqlfails.get(uuid);
         String targetName = NameFetcher.getName(fetcheduuid);
         try {
             User user = LuckPerms.getApi().getUser(uuid);
@@ -58,15 +53,15 @@ public class PlayerLogin implements Listener {
                 try {
                     user = userFuture.get(5, TimeUnit.SECONDS);
                 } catch (Exception e) {
-                    BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + targetName);
-                    BungeeMain.Logs.severe("This Error was encountered when trying to obtain a user instance, there was no work around for this.");
-                    BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                    StringBuilder stacktrace = new StringBuilder();
-                    for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                        stacktrace.append(stackTraceElement.toString()).append("\n");
+                    try {
+                        throw new DataFecthException("User instance required for ban bypass check", targetName, "User Instance", PlayerLogin.class.getName(), e);
+                    }catch (DataFecthException dfe){
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(dfe);
+                        errorHandler.loginError(event);
                     }
-                    BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                    user = null;
+                    executorService.shutdown();
+                    return;
                 }
                 executorService.shutdown();
             }
@@ -85,14 +80,14 @@ public class PlayerLogin implements Listener {
                     BungeeMain.Logs.info(user.getName() + " Bypassed their ban and were unbanned");
                     plugin.getProxy().getScheduler().schedule(plugin, () ->
                                     StaffChat.sendMessage(targetName + " Bypassed their ban, Unbanning...")
-                            , 3, TimeUnit.SECONDS);
+                            , 5, TimeUnit.SECONDS);
                 } else {
                     Punishment ban = punishmngr.getBan(fetcheduuid);
                     if (System.currentTimeMillis() > ban.getDuration()) {
                         punishmngr.revoke(punishmngr.getBan(fetcheduuid), null, targetName, false, false);
                         BungeeMain.Logs.info(user.getName() + "'s ban expired so they were unbanned");
                     } else {
-                        Long banleftmillis = ban.getDuration() - System.currentTimeMillis();
+                        long banleftmillis = ban.getDuration() - System.currentTimeMillis();
                         int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
                         int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
                         int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
@@ -191,7 +186,7 @@ public class PlayerLogin implements Listener {
                             }
                         }
                         if (!bannedalts.isEmpty()) {
-                            plugin.getProxy().getScheduler().schedule(plugin, () -> StaffChat.sendMessage(targetName + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", "")), 3, TimeUnit.SECONDS);
+                            plugin.getProxy().getScheduler().schedule(plugin, () -> StaffChat.sendMessage(targetName + " Might have banned alts: " + bannedalts.toString().replace("[", "").replace("]", "")), 5, TimeUnit.SECONDS);
                         }
                     }
                 } catch (SQLException sqle) {

@@ -1,6 +1,7 @@
 package me.fiftyfour.punisher.bungee.chats;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;
 import me.lucko.luckperms.LuckPerms;
 import me.lucko.luckperms.api.Contexts;
@@ -50,14 +51,13 @@ public class AdminChat extends Command {
                 try {
                     user = userFuture.get(5, TimeUnit.SECONDS);
                 }catch (Exception e){
-                    BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + player.getName());
-                    BungeeMain.Logs.severe("This Error was encountered when trying to get a prefix so to avoid issues the prefix was set to \"\"");
-                    BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                    StringBuilder stacktrace = new StringBuilder();
-                    for (StackTraceElement stackTraceElement : e.getStackTrace()){
-                        stacktrace.append(stackTraceElement.toString()).append("\n");
+                    try {
+                        throw new DataFecthException("User prefix required for chat message to avoid issues the prefix was set to \"\"", player.getName(), "User Instance", StaffChat.class.getName(), e);
+                    }catch (DataFecthException dfe){
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(dfe);
+                        errorHandler.alert(dfe, commandSender);
                     }
-                    BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                     user = null;
                 }
                 executorService.shutdown();
@@ -73,9 +73,9 @@ public class AdminChat extends Command {
                 }
             }else
                 prefix = "";
-            BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("AC").color(ChatColor.DARK_RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
+            BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("AC").color(ChatColor.DARK_AQUA).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
                     .append(" ").color(ChatColor.RESET).append(ChatColor.translateAlternateColorCodes('&', prefix + " ")).bold(false).append(player.getName() + ": " + sb)
-                    .color(ChatColor.DARK_RED).bold(false).create();
+                    .color(ChatColor.DARK_AQUA).bold(false).create();
             for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
                 if (all.hasPermission("punisher.adminchat")) {
                     all.sendMessage(messagetosend);
@@ -86,8 +86,8 @@ public class AdminChat extends Command {
         }
     }
     public static void sendMessage(String message){
-        BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("AC").color(ChatColor.DARK_RED).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
-                .append(" ").color(ChatColor.RESET).bold(false).append(message).color(ChatColor.DARK_RED).bold(false).create();
+        BaseComponent[] messagetosend = new ComponentBuilder("[").color(ChatColor.DARK_GRAY).append("AC").color(ChatColor.DARK_AQUA).bold(true).append("]").color(ChatColor.DARK_GRAY).bold(false)
+                .append(" ").color(ChatColor.RESET).bold(false).append(message).color(ChatColor.DARK_AQUA).bold(false).create();
         for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
             if (all.hasPermission("punisher.adminchat")) {
                 all.sendMessage(messagetosend);

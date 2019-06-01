@@ -126,7 +126,8 @@ public class BungeeMain extends Plugin implements Listener {
             //check for update
             getLogger().info(prefix + ChatColor.GREEN + "Checking for updates...");
             if (!this.getDescription().getVersion().contains("BETA") && !this.getDescription().getVersion().contains("PRE-RELEASE")
-                    && !this.getDescription().getVersion().contains("DEV-BUILD") && !this.getDescription().getVersion().contains("SNAPSHOT")) {
+                    && !this.getDescription().getVersion().contains("DEV-BUILD") && !this.getDescription().getVersion().contains("SNAPSHOT")
+                    && !this.getDescription().getVersion().contains("LEGACY")) {
                 try {
                     if (UpdateChecker.getCurrentVersion() == null) {
                         getLogger().info(prefix + ChatColor.GREEN + "Could not check for update!");
@@ -162,6 +163,12 @@ public class BungeeMain extends Plugin implements Listener {
                     saveDefaultConfig();
                     PunisherConfig.set("Configversion", this.getDescription().getVersion());
                 }
+            } if (this.getDescription().getVersion().contains("LEGACY")){
+                getLogger().info(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
+                getLogger().info(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
+                getLogger().info(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have new features.");
+                getLogger().info(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
+                update = false;
             } else {
                 getLogger().info(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The Punisher");
                 getLogger().info(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");

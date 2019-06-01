@@ -20,8 +20,8 @@ public class Status implements Callable<TextComponent> {
     public TextComponent call() {
         TextComponent status;
         if (punishMnger.isBanned(targetuuid)) {
-            Long bantime = punishMnger.getBan(targetuuid).getDuration();
-            Long banleftmillis = bantime - System.currentTimeMillis();
+            long bantime = punishMnger.getBan(targetuuid).getDuration();
+            long banleftmillis = bantime - System.currentTimeMillis();
             int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
             int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
             int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
@@ -38,8 +38,8 @@ public class Status implements Callable<TextComponent> {
                 status.setColor(ChatColor.RED);
             }
         } else if (punishMnger.isMuted(targetuuid)) {
-            Long mutetime = punishMnger.getMute(targetuuid).getDuration();
-            Long muteleftmillis = mutetime - System.currentTimeMillis();
+            long mutetime = punishMnger.getMute(targetuuid).getDuration();
+            long muteleftmillis = mutetime - System.currentTimeMillis();
             int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
             int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
             int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);

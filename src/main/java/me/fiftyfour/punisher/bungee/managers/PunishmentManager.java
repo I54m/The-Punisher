@@ -2,6 +2,9 @@ package me.fiftyfour.punisher.bungee.managers;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.bungee.exceptions.PunishmentCalculationException;
+import me.fiftyfour.punisher.bungee.exceptions.PunishmentIssueException;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
@@ -183,10 +186,15 @@ public class PunishmentManager {
                 int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
                 int secondsleft = (int) (muteleftmillis / 1000 % 60);
                 if (secondsleft <= 0){
-                    if (player != null) player.sendMessage(new ComponentBuilder(plugin.prefix).append("Seconds left cannot be less than or equal to 0 when punishing!").color(ChatColor.RED).create());
-                    BungeeMain.Logs.severe("ERROR: Seconds left cannot be less than or equal to 0 when punishing!");
-                    BungeeMain.Logs.severe(punishment.toString());
-                    throw new IndexOutOfBoundsException("Seconds left cannot be less than or equal to 0 when punishing!");
+                    try {
+                        throw new PunishmentIssueException("Seconds left cannot be less than or equal to 0 when punishing!", punishment);
+                    }catch(PunishmentIssueException e){
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(e);
+                        if (player != null)
+                            errorHandler.alert(e, player);
+                        return;
+                    }
                 }
                 if (target != null && target.isConnected()) {
                     if (BungeeMain.PunisherConfig.getBoolean("Mute Sound.Enabled")) {
@@ -296,10 +304,15 @@ public class PunishmentManager {
                 int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
                 int secondsleft = (int) (banleftmillis / 1000 % 60);
                 if (secondsleft <= 0){
-                    if (player != null) player.sendMessage(new ComponentBuilder(plugin.prefix).append("Seconds left cannot be less than or equal to 0 when punishing!").color(ChatColor.RED).create());
-                    BungeeMain.Logs.severe("ERROR: Seconds left cannot be less than or equal to 0 when punishing!");
-                    BungeeMain.Logs.severe(punishment.toString());
-                    throw new IndexOutOfBoundsException("Seconds left cannot be less than or equal to 0 when punishing!");
+                    try {
+                        throw new PunishmentIssueException("Seconds left cannot be less than or equal to 0 when punishing!", punishment);
+                    }catch(PunishmentIssueException e){
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(e);
+                        if (player != null)
+                            errorHandler.alert(e, player);
+                        return;
+                    }
                 }
                 if (target != null && target.isConnected()) {
                     String banMessage;
@@ -407,7 +420,12 @@ public class PunishmentManager {
             PreparedStatement stmthist = plugin.connection.prepareStatement(sqlhist);
             ResultSet resultshist = stmthist.executeQuery();
             if (resultshist.next()) {
-                int current = resultshist.getInt(reason.toString());
+                int current;
+                if (reason.toString().contains("Manual")) {
+                    current = resultshist.getInt("Manual_Punishments");
+                }else{
+                    current = resultshist.getInt(reason.toString());
+                }
                 if (current != 0) {
                     current--;
                 } else {
@@ -416,7 +434,13 @@ public class PunishmentManager {
                         return;
                     }
                 }
-                String sqlhistupdate = "UPDATE `history` SET `" + reason.toString() + "`='" + current + "' WHERE `UUID`='" + targetuuid + "' ;";
+                String collum;
+                if (reason.toString().contains("Manual")) {
+                    collum = "Manual_Punishments";
+                }else{
+                    collum = reason.toString();
+                }
+                String sqlhistupdate = "UPDATE `history` SET `" + collum + "`='" + current + "' WHERE `UUID`='" + targetuuid + "' ;";
                 PreparedStatement stmthistupdate = plugin.connection.prepareStatement(sqlhistupdate);
                 stmthistupdate.executeUpdate();
                 stmthistupdate.close();
@@ -438,19 +462,17 @@ public class PunishmentManager {
             case Manual_3_Day:
                 return (long) 2.592e+8;
             case Manual_1_Week:
+            case Other_Minor_Offence:
                 return (long) 6.048e+8;
             case Manual_2_Week:
                 return (long) 1.21e+9;
             case Manual_3_Week:
                 return (long) 1.814e+9;
             case Manual_1_Month:
+            case Other_Major_Offence:
                 return (long) 2.628e+9;
             case Manual_Permanently:
                 return (long) 3.154e+12;
-            case Other_Minor_Offence:
-                return (long) 6.048e+8;
-            case Other_Major_Offence:
-                return (long) 2.628e+9;
             case Other_Offence:
                 return (long) 1.8e+6;
         }
@@ -471,7 +493,16 @@ public class PunishmentManager {
     }
 
     public Punishment.Type calculateType(String targetUUID, Punishment.Reason reason) throws SQLException{
-        if (reason.toString().contains("Manual") || reason.toString().contains("Other")) throw new IllegalArgumentException("reason cannot be manual or other when calculating punishment type!");
+        if (reason.toString().contains("Manual") || reason.toString().contains("Other")){
+            try {
+                throw new PunishmentCalculationException("Punishment reason cannot be 'manual' or 'other' when calculating automatic punishment type!", "type");
+            }catch(PunishmentCalculationException e){
+                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                errorHandler.log(e);
+                errorHandler.adminChatAlert(e, ProxyServer.getInstance().getConsole());
+                return null;
+            }
+        }
         int punishment;
         String sql = "SELECT * FROM `history` WHERE UUID='" + targetUUID + "'";
         PreparedStatement stmt = plugin.connection.prepareStatement(sql);
@@ -625,7 +656,7 @@ public class PunishmentManager {
                 if (BungeeMain.PunisherConfig.getBoolean("MySql.debugMode"))
                     plugin.getLogger().info(plugin.prefix + ChatColor.GREEN + "Caching Punishments...");
                 resetCache();
-            }, 1, 10, TimeUnit.SECONDS);
+            }, 10, 10, TimeUnit.SECONDS);
         }
     }
 

@@ -1,5 +1,7 @@
 package me.fiftyfour.punisher.universal.systems;
 
+import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;
 import me.lucko.luckperms.LuckPerms;
@@ -18,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Permissions {
 
-    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) throws Exception {
+    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) throws IllegalStateException {
         UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
@@ -29,12 +31,17 @@ public class Permissions {
             try {
                 user = userFuture.get(5, TimeUnit.SECONDS);
             }catch (Exception e){
-                executorService.shutdown();
-                throw new Exception();
+                try {
+                    throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
+                }catch (DataFecthException dfe){
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(dfe);
+                }
+                user = null;
             }
             executorService.shutdown();
             if(user == null){
-                throw new IllegalStateException();
+                throw new IllegalStateException("User instance cannot be null!! (check punisher logs for more info)");
             }
         }
         ContextManager cm = LuckPerms.getApi().getContextManager();
