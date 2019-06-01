@@ -6,7 +6,7 @@
 
     <groupId>me.fiftyfour.punisher</groupId>
     <artifactId>The-Punisher</artifactId>
-    <version>1.7.7-BETA</version>
+    <version>1.8-LEGACY</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -114,7 +114,7 @@
             <artifactId>alonsojda</artifactId>
             <version>1.0-ALPHA</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/AlonsoJDA.jar</systemPath>
+            <systemPath>D:/Test server/BuildTools/AlonsoJDA.jar</systemPath>
         </dependency>
 
     </dependencies>
@@ -127,6 +127,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.1</version>
                 <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
                     <finalName>${project.name}-${project.version}</finalName>
                     <relocations>
                         <relocation>
