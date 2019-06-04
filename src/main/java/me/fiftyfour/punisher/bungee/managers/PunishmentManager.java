@@ -2,8 +2,8 @@ package me.fiftyfour.punisher.bungee.managers;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
-import me.fiftyfour.punisher.bungee.exceptions.PunishmentCalculationException;
-import me.fiftyfour.punisher.bungee.exceptions.PunishmentIssueException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentCalculationException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentIssueException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
@@ -80,10 +80,9 @@ public class PunishmentManager {
                         try {
                             ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
                             DataOutputStream out = new DataOutputStream(outbytes);
-                            out.writeUTF("Punisher");
-                            out.writeUTF("PlaySound");
+                            out.writeUTF("playsound");
                             out.writeUTF(BungeeMain.PunisherConfig.getString("Warn Sound.Sound"));
-                            target.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                            target.getServer().sendData("punisher.minor", outbytes.toByteArray());
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
                         }
@@ -201,10 +200,9 @@ public class PunishmentManager {
                         try {
                             ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
                             DataOutputStream out = new DataOutputStream(outbytes);
-                            out.writeUTF("Punisher");
-                            out.writeUTF("PlaySound");
+                            out.writeUTF("playsound");
                             out.writeUTF(BungeeMain.PunisherConfig.getString("Mute Sound.Sound"));
-                            target.getServer().sendData("BungeeCord", outbytes.toByteArray());
+                            target.getServer().sendData("punisher:minor", outbytes.toByteArray());
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
                         }
