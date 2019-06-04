@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.chats;
 
-import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;
 import me.lucko.luckperms.LuckPerms;
