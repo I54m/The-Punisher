@@ -1,4 +1,4 @@
-package me.fiftyfour.punisher.bungee.exceptions;
+package me.fiftyfour.punisher.universal.exceptions;
 
 public class DataFecthException extends Exception {
 

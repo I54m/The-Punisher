@@ -1,7 +1,7 @@
-package me.fiftyfour.punisher.bungee.exceptions;
+package me.fiftyfour.punisher.universal.exceptions;
 
 import java.sql.SQLException;
 
 public class PunishmentsDatabaseException extends SQLException {
-    //not yet implemented
+    //todo not yet implemented
 }

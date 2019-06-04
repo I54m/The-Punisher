@@ -2,7 +2,7 @@ package me.fiftyfour.punisher.bungee.commands;
 
 import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
