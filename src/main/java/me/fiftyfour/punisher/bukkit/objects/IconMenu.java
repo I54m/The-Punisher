@@ -70,9 +70,8 @@ public class IconMenu implements Listener {
         if (viewing.contains(event.getWhoClicked().getName())) {
             event.setCancelled(true);
             Player p = (Player) event.getWhoClicked();
-            Row row = getRowFromSlot(event.getSlot());
             if (event.getCurrentItem() != null) {
-                if (click.click(p, this, row, event.getSlot() - row.getRow() * 9, event.getCurrentItem()))
+                if (click.click(p, this, event.getSlot(), event.getCurrentItem()))
                     close(p);
             }
         }
@@ -85,12 +84,6 @@ public class IconMenu implements Listener {
     public void addButton(int position, ItemStack item, String name, String... lore) {
         items[position] = getItem(item, name, lore);
     }
-    private Row getRowFromSlot(int slot) {
-        return new Row(slot / 9, items);
-    }
-    public Row getRow(int row) {
-        return new Row(row, items);
-    }
     private ItemStack getItem(ItemStack item, String name, String... lore) {
         ItemMeta im = item.getItemMeta();
         im.setDisplayName(name);
@@ -99,25 +92,6 @@ public class IconMenu implements Listener {
         return item;
     }
     public interface onClick {
-        boolean click(Player clicker, IconMenu menu, Row row, int slot, ItemStack item);
+        boolean click(Player clicker, IconMenu menu, int slot, ItemStack item);
     }
-    public class Row {
-        int row;
-        private ItemStack[] rowItems = new ItemStack[9];
-
-        private Row(int row, ItemStack[] items) {
-            try {
-                this.row = row;
-                int j = 0;
-                for (int i = (row * 9); i < (row * 9) + 9; i++) {
-                    rowItems[j] = items[i];
-                    j++;
-                }
-            }catch (ArrayIndexOutOfBoundsException e){}
-        }
-        public int getRow() {
-            return row;
-        }
-    }
-
 }
