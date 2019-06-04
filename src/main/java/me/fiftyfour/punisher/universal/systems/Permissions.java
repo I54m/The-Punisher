@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.universal.systems;
 
-import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;

@@ -2,7 +2,7 @@ package me.fiftyfour.punisher.bungee.listeners;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
-import me.fiftyfour.punisher.bungee.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
