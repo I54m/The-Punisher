@@ -1,4 +1,4 @@
-package me.fiftyfour.punisher.bungee.discordbot.listeners;
+package me.fiftyfour.punisher.bungee.discordbot.listeners.discord;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.discordbot.DiscordMain;
