@@ -15,6 +15,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
+import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,28 +36,61 @@ import java.util.logging.*;
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class BungeeMain extends Plugin implements Listener {
 
+    public static File Reputation, Punishments, PlayerInfo, DiscordIntegration;
+    public static Configuration PunishmentsConfig, PunisherConfig, CooldownsConfig, RepStorage, StaffHidden, InfoConfig;
+    public static Logger Logs = Logger.getLogger("Punisher Logs");
+    public static boolean update;
+    public static String database;
     private static BungeeMain instance;
     private static File Cooldowns, StaffHide;
-    public static File Reputation, Punishments , PlayerInfo, DiscordIntegration;
-    public static Configuration PunishmentsConfig, PunisherConfig, CooldownsConfig, RepStorage, StaffHidden, InfoConfig;
-    private File Punisher;
-    public static Logger Logs = Logger.getLogger("Punisher Logs");
     private static FileHandler LogsHandler;
-    public static boolean update;
     public String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
-    private String host, username, password, extraArguments;
-    public static String database;
-    private int port;
     public Connection connection;
-    public static BungeeMain getInstance() {
-        return instance;
-    }
-    private static void setInstance(BungeeMain instance) {
-        BungeeMain.instance = instance;
-    }
+    private File Punisher;
+    private String host, username, password, extraArguments;
+    private int port;
     private HikariDataSource hikari;
     private PunishmentManager punManager = PunishmentManager.getInstance();
 
+    public static BungeeMain getInstance() {
+        return instance;
+    }
+
+    private static void setInstance(BungeeMain instance) {
+        BungeeMain.instance = instance;
+    }
+
+    public static void saveCooldowns() {
+        try {
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(CooldownsConfig, Cooldowns);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveRep() {
+        try {
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(RepStorage, Reputation);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveInfo() {
+        try {
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(InfoConfig, PlayerInfo);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveStaffHide() {
+        try {
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(StaffHidden, StaffHide);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -64,7 +98,7 @@ public class BungeeMain extends Plugin implements Listener {
             long startTime = System.nanoTime();
             //set instance
             setInstance(this);
-            if (instance == null || getInstance() == null) throw new NullPointerException("Instance is null!");
+            if (instance == null || getInstance() == null) throw new NullPointerException("Plugin Instance is null!");
             //register commands
             getLogger().info(prefix + ChatColor.GREEN + "Registering Commands...");
             getProxy().getPluginManager().registerCommand(this, new AdminCommands());
@@ -163,7 +197,8 @@ public class BungeeMain extends Plugin implements Listener {
                     saveDefaultConfig();
                     PunisherConfig.set("Configversion", this.getDescription().getVersion());
                 }
-            } if (this.getDescription().getVersion().contains("LEGACY")){
+            }
+            if (this.getDescription().getVersion().contains("LEGACY")) {
                 getLogger().info(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
                 getLogger().info(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
                 getLogger().info(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have new features.");
@@ -185,13 +220,16 @@ public class BungeeMain extends Plugin implements Listener {
                 getLogger().warning(prefix + ChatColor.RED + "If you want to use Discord integration please make sure AlonsoJDA is enabled!");
             } else if (getProxy().getPluginManager().getPlugin("AlonsoJDA") != null && PunisherConfig.getBoolean("DiscordIntegration.Enabled"))
                 DiscordMain.startBot();
-            //start logging to logs file
-            getLogger().info(prefix + ChatColor.GREEN + "Beginning Logging...");
-            Logs.info("****START OF LOGS BEGINNING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
             //check if help command should be enabled
             if (PunisherConfig.getBoolean("helpCommand.Enabled")) {
                 getProxy().getPluginManager().registerCommand(this, new HelpCommand());
             }
+            //start logging to logs file
+            getLogger().info(prefix + ChatColor.GREEN + "Beginning Logging...");
+            Logs.info("****START OF LOGS BEGINNING DATE: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "****");
+            //register plugin channels
+            getProxy().registerChannel("punisher:main");
+            getProxy().registerChannel("punisher:minor");
             //setup mysql connection
             getLogger().info(prefix + ChatColor.GREEN + "Establishing MYSQL connection...");
             host = PunisherConfig.getString("MySQL.host");
@@ -223,15 +261,19 @@ public class BungeeMain extends Plugin implements Listener {
             //start caching punishments
             getLogger().info(prefix + ChatColor.GREEN + "Beginning punishment caching...");
             punManager.startCaching();
-            punManager.resetCache();
             long duration = (System.nanoTime() - startTime) / 1000000;
             getLogger().info(prefix + ChatColor.GREEN + "Successfully enabled The Punisher v" + this.getDescription().getVersion() + " By 54mpenguin (took " + duration + "ms)");
-        }catch (Exception e){
+        } catch (Exception e) {
+            onDisable();
             getLogger().severe(prefix + ChatColor.RED + "Could not enable The Punisher v" + this.getDescription().getVersion() + "!!");
-            getLogger().severe(prefix + ChatColor.RED + "Error message: " + e.getMessage());
+            if (e.getCause() != null)
+                getLogger().severe(prefix + ChatColor.RED + "Error cause: " + e.getCause());
+            if (e.getMessage() != null)
+                getLogger().severe(prefix + ChatColor.RED + "Error message: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
     public void onDisable() {
         if (punManager.cacheTask != null)
             punManager.cacheTask.cancel();
@@ -249,85 +291,103 @@ public class BungeeMain extends Plugin implements Listener {
                 hikari = null;
                 getLogger().info(prefix + ChatColor.GREEN + "Storage Closed");
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             getLogger().severe(prefix + ChatColor.RED + "Could not Close Storage!");
             e.printStackTrace();
         }
     }
-    public void loadConfig() {
-        StaffHide = new File(getDataFolder(), "/data/staffhide.yml");
-        Reputation = new File(getDataFolder(), "/data/reputation.yml");
+
+    public void loadConfig() throws Exception {
         Punishments = new File(getDataFolder(), "punishments.yml");
         Punisher = new File(getDataFolder(), "config.yml");
+        StaffHide = new File(getDataFolder(), "/data/staffhide.yml");
+        Reputation = new File(getDataFolder(), "/data/reputation.yml");
         Cooldowns = new File(getDataFolder(), "/data/cooldowns.yml");
         PlayerInfo = new File(getDataFolder(), "/data/playerinfo.yml");
         DiscordIntegration = new File(getDataFolder(), "/data/discordintegration.yml");
         File logsdir = new File(getDataFolder() + "/logs/");
         File datadir = new File(getDataFolder() + "/data/");
-        try {
-            if (!getDataFolder().exists()) {
-                getDataFolder().mkdir();
-            }
-            if (!logsdir.exists()){
-                logsdir.mkdir();
-            }
-            SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss");
-            LogsHandler = new FileHandler(getDataFolder() + "/logs/" + format.format(Calendar.getInstance().getTime()) + ".log");
-            LogsHandler.setFormatter(new Formatter() {
-                @Override
-                public String format(LogRecord record) {
-                    SimpleDateFormat logTime = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss");
-                    Calendar cal = new GregorianCalendar();
-                    cal.setTimeInMillis(record.getMillis());
-                    if (record.getLevel().equals(Level.SEVERE)){
-                        ProxyServer.getInstance().getLogger().warning(" ");
-                        ProxyServer.getInstance().getLogger().warning(prefix + ChatColor.RED + "An error was detected and logged to log file!");
-                        ProxyServer.getInstance().getLogger().warning(" ");
-                    }
-                    return "\n" + record.getLevel() + " "
-                            + logTime.format(cal.getTime())
-                            + ": "
-                            + record.getMessage();
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdir();
+        }
+        if (!logsdir.exists()) {
+            logsdir.mkdir();
+        }
+        if (!datadir.exists()) {
+            datadir.mkdir();
+        }
+        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss");
+        LogsHandler = new FileHandler(getDataFolder() + "/logs/" + format.format(Calendar.getInstance().getTime()) + ".log");
+        LogsHandler.setFormatter(new Formatter() {
+            @Override
+            public String format(LogRecord record) {
+                SimpleDateFormat logTime = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss");
+                Calendar cal = new GregorianCalendar();
+                cal.setTimeInMillis(record.getMillis());
+                if (record.getLevel().equals(Level.SEVERE)) {
+                    ProxyServer.getInstance().getLogger().warning(" ");
+                    ProxyServer.getInstance().getLogger().warning(prefix + ChatColor.RED + "An error was detected and logged to log file!");
+                    ProxyServer.getInstance().getLogger().warning(" ");
                 }
-            });
-            Logs.setUseParentHandlers(false);
-            Logs.addHandler(LogsHandler);
-            if (!datadir.exists()){
-                datadir.mkdir();
+                return "\n" + record.getLevel() + " "
+                        + logTime.format(cal.getTime())
+                        + ": "
+                        + record.getMessage();
             }
-            if (!Punishments.exists()) {
-                Punishments.createNewFile();
-                saveDefaultPunishments();
-            }
-            if (!Punisher.exists()) {
-                Punisher.createNewFile();
-                saveDefaultConfig();
-            }
-            if (!Cooldowns.exists()){
-                Cooldowns.createNewFile();
-            }
-            if (!Reputation.exists()){
-                Reputation.createNewFile();
-            }
-            if (!PlayerInfo.exists()){
-                PlayerInfo.createNewFile();
-            }
-            if (!DiscordIntegration.exists()){
-                DiscordIntegration.createNewFile();
-            }
-            if (!StaffHide.exists()){
-                StaffHide.createNewFile();
-            }
+        });
+        Logs.setUseParentHandlers(false);
+        Logs.addHandler(LogsHandler);
+        if (!Punishments.exists()) {
+            Punishments.createNewFile();
+            saveDefaultPunishments();
+        }
+        if (!Punisher.exists()) {
+            Punisher.createNewFile();
+            saveDefaultConfig();
+        }
+        if (!Cooldowns.exists()) {
+            Cooldowns.createNewFile();
+        }
+        if (!Reputation.exists()) {
+            Reputation.createNewFile();
+        }
+        if (!PlayerInfo.exists()) {
+            PlayerInfo.createNewFile();
+        }
+        if (!DiscordIntegration.exists()) {
+            DiscordIntegration.createNewFile();
+        }
+        if (!StaffHide.exists()) {
+            StaffHide.createNewFile();
+        }
+        try {
             PunishmentsConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Punishments);
+        } catch (YAMLException YAMLE) {
+            getLogger().severe(prefix + ChatColor.RED + "Error: Could not load punishments config!");
+            getLogger().severe(prefix + ChatColor.RED + "Error message: " + YAMLE.getMessage());
+            throw new Exception("Could not load punishments config!", YAMLE);
+        }
+        try {
             PunisherConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Punisher);
-            CooldownsConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Cooldowns);
-            RepStorage = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Reputation);
+        } catch (YAMLException YAMLE) {
+            getLogger().severe(prefix + ChatColor.RED + "Error: Could not load main config!");
+            getLogger().severe(prefix + ChatColor.RED + "Error message: " + YAMLE.getMessage());
+            throw new Exception("Could not load main config!", YAMLE);
+        }
+        try {
             InfoConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(PlayerInfo);
+            CooldownsConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Cooldowns);
             StaffHidden = ConfigurationProvider.getProvider(YamlConfiguration.class).load(StaffHide);
-        } catch (Exception e) {
-            e.printStackTrace();
+            RepStorage = ConfigurationProvider.getProvider(YamlConfiguration.class).load(Reputation);
+        } catch (YAMLException YAMLE) {
+            getLogger().severe(prefix + ChatColor.RED + "Error: Could not load data config files!");
+            getLogger().severe(prefix + ChatColor.RED + "These configs are not meant to be altered!");
+            getLogger().severe(prefix + ChatColor.RED + "If you have not altered them this may be a bug!");
+            getLogger().severe(prefix + ChatColor.RED + "Error message: " + YAMLE.getMessage());
+            throw new Exception("Could not load data config files!", YAMLE);
         }
     }
+
     public void saveConfig() {
         try {
             ConfigurationProvider.getProvider(YamlConfiguration.class).save(PunishmentsConfig, Punishments);
@@ -336,27 +396,7 @@ public class BungeeMain extends Plugin implements Listener {
             e.printStackTrace();
         }
     }
-    public static void saveCooldowns() {
-        try {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(CooldownsConfig, Cooldowns);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    public static void saveRep() {
-        try {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(RepStorage, Reputation);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    public static void saveInfo() {
-        try {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(InfoConfig, PlayerInfo);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+
     public void saveDefaultPunishments() {
         try {
             Files.copy(getResourceAsStream("punishments.yml"), Punishments.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -364,6 +404,7 @@ public class BungeeMain extends Plugin implements Listener {
             throw new RuntimeException("Unable to create configuration file", e);
         }
     }
+
     private void saveDefaultConfig() {
         try {
             Files.copy(getResourceAsStream("BungeeConfig.yml"), Punisher.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -371,23 +412,19 @@ public class BungeeMain extends Plugin implements Listener {
             throw new RuntimeException("Unable to create configuration file", e);
         }
     }
-    public static void saveStaffHide(){
-        try{
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(StaffHidden, StaffHide);
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-    }
+
     private void openConnection() throws SQLException {
         if (connection != null && !connection.isClosed() || hikari == null)
             return;
         connection = hikari.getConnection();
         getLogger().info(prefix + ChatColor.GREEN + "MYSQL Connected to server: " + host + ":" + port + " with user: " + username + "!");
     }
-    public HikariDataSource getDataSource(){
+
+    public HikariDataSource getDataSource() {
         return hikari;
     }
-    private void setupmysql(){
+
+    private void setupmysql() {
         try {
             getLogger().info(prefix + ChatColor.GREEN + "Setting up MYSQL...");
             String createdb = "CREATE DATABASE IF NOT EXISTS " + database;
@@ -437,7 +474,7 @@ public class BungeeMain extends Plugin implements Listener {
             if (oldtable.next()) {
                 getLogger().info(prefix + ChatColor.RED + "Found old \"iplist\" table, this table was renamed in v1.7.x!");
                 getLogger().info(prefix + ChatColor.GREEN + "Importing old table into new one..");
-                getProxy().getScheduler().runAsync(this,  this::importOldTable);
+                getProxy().getScheduler().runAsync(this, this::importOldTable);
             }
             oldtable.close();
             oldstmt.close();
@@ -451,20 +488,22 @@ public class BungeeMain extends Plugin implements Listener {
             getLogger().info("");
             getLogger().info(prefix + ChatColor.GREEN + "SQL Connection is now online!");
             getLogger().info("");
-        }catch (SQLException e){
+        } catch (SQLException e) {
             getLogger().severe(prefix + ChatColor.RED + "Could not Setup MYSQL!!");
             mysqlfail(e);
         }
     }
-    public void mysqlfail(Exception e){
+
+    public void mysqlfail(Exception e) {
         getLogger().severe(prefix + e);
         getProxy().getPluginManager().unregisterListeners(this);
         getProxy().getPluginManager().unregisterCommands(this);
         getLogger().severe(prefix + ChatColor.RED + "Plugin Disabled!");
     }
-    private void testConnection () {
+
+    private void testConnection() {
         getProxy().getScheduler().schedule(this, () -> {
-            if (!testConnectionManual()){
+            if (!testConnectionManual()) {
                 mysqlfail(new SQLException("Unable to reestablish MySQL connection!"));
                 getProxy().getPluginManager().unregisterListeners(getInstance());
                 getProxy().getPluginManager().unregisterCommands(getInstance());
@@ -472,7 +511,8 @@ public class BungeeMain extends Plugin implements Listener {
             }
         }, 1, 60, TimeUnit.MINUTES);
     }
-    public boolean testConnectionManual(){
+
+    public boolean testConnectionManual() {
         try {
             if (connection != null && !connection.isClosed()) {
                 if (PunisherConfig.getBoolean("MySQL.debugMode"))
@@ -480,32 +520,32 @@ public class BungeeMain extends Plugin implements Listener {
                 try {
                     if (connection.isValid(10)) {
                         if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                        getLogger().info(prefix + ChatColor.GREEN + "Connection Valid, no need to reset!");
+                            getLogger().info(prefix + ChatColor.GREEN + "Connection Valid, no need to reset!");
                         return true;
                     } else {
                         if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                        getLogger().info(prefix + ChatColor.RED + "Connection Invalid after: 60 minutes, resetting connection...");
+                            getLogger().info(prefix + ChatColor.RED + "Connection Invalid after: 60 minutes, resetting connection...");
                         connection.close();
                         openConnection();
                         setupmysql();
                         return true;
                     }
-                }catch (SQLException e){
+                } catch (SQLException e) {
                     try {
                         if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                        getLogger().info(prefix + ChatColor.RED + "Connection Invalid, resetting connection...");
+                            getLogger().info(prefix + ChatColor.RED + "Connection Invalid, resetting connection...");
                         connection.close();
                         openConnection();
                         setupmysql();
                         return true;
-                    }catch (Exception ex){
+                    } catch (Exception ex) {
                         if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                        getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
+                            getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
                         mysqlfail(ex);
                         return false;
                     }
                 }
-            }else{
+            } else {
                 if (PunisherConfig.getBoolean("MySQL.debugMode")) {
                     getLogger().info(prefix + ChatColor.RED + "SQL Connection not connected after: 60 minutes, reconnecting!");
                     getLogger().info(prefix + ChatColor.GREEN + "Establishing New MYSQL connection...");
@@ -527,9 +567,9 @@ public class BungeeMain extends Plugin implements Listener {
                 setupmysql();
                 return true;
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             if (PunisherConfig.getBoolean("MySQL.debugMode"))
-            getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection test failed!!!");
+                getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection test failed!!!");
             try {
                 if (PunisherConfig.getBoolean("MySQL.debugMode")) {
                     getLogger().info(prefix + ChatColor.RED + "SQL Connection not stable, resetting!");
@@ -549,7 +589,7 @@ public class BungeeMain extends Plugin implements Listener {
                     openConnection();
                 } catch (SQLException ex) {
                     if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                    getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection failed!!! (SQLException)");
+                        getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection failed!!! (SQLException)");
                     mysqlfail(ex);
                     return false;
                 }
@@ -558,14 +598,14 @@ public class BungeeMain extends Plugin implements Listener {
                 return true;
             } catch (Exception ex) {
                 if (PunisherConfig.getBoolean("MySQL.debugMode"))
-                getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
+                    getLogger().info(prefix + ChatColor.RED + "MYSQL reconnect failed twice!");
                 mysqlfail(ex);
                 return false;
             }
         }
     }
 
-    private void importOldTable(){
+    private void importOldTable() {
         try {
             String sqldb = "USE `" + database + "`;";
             PreparedStatement stmtdb = connection.prepareStatement(sqldb);
@@ -578,7 +618,7 @@ public class BungeeMain extends Plugin implements Listener {
             String sql = "SELECT * FROM `iplist`";
             PreparedStatement stmt = connection.prepareStatement(sql);
             ResultSet results = stmt.executeQuery();
-            while (results.next()){
+            while (results.next()) {
                 String sqlupdate = "INSERT INTO `altlist`(`UUID`, `ip`) VALUES ('" + results.getString("uuid") + "','" + results.getString("ip") + "');";
                 PreparedStatement stmtupdate = connection.prepareStatement(sqlupdate);
                 stmtupdate.executeUpdate();
@@ -592,7 +632,7 @@ public class BungeeMain extends Plugin implements Listener {
             stmt1.executeUpdate();
             stmt1.close();
             getLogger().info(prefix + ChatColor.GREEN + "Old Table Removed!");
-        }catch (SQLException sqle){
+        } catch (SQLException sqle) {
             sqle.printStackTrace();
         }
 
