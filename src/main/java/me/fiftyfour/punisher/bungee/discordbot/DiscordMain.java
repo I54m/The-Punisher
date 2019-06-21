@@ -3,6 +3,8 @@ package me.fiftyfour.punisher.bungee.discordbot;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.discordbot.commands.DiscordCommand;
 import me.fiftyfour.punisher.bungee.discordbot.listeners.*;
+import me.fiftyfour.punisher.bungee.discordbot.listeners.discord.BotReady;
+import me.fiftyfour.punisher.bungee.discordbot.listeners.discord.PrivateMessageReceived;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
