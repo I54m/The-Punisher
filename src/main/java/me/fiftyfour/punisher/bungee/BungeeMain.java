@@ -183,22 +183,7 @@ public class BungeeMain extends Plugin implements Listener {
                 } catch (Exception e) {
                     getLogger().severe(ChatColor.RED + e.getMessage());
                 }
-                //check config version
-                if (!PunisherConfig.getString("Configversion").equals(this.getDescription().getVersion())) {
-                    getLogger().warning(prefix + ChatColor.RED + "Old config.yml detected!");
-                    getLogger().warning(prefix + ChatColor.RED + "Renaming old config to old_config.yml!");
-                    File newfile = new File(getDataFolder(), "old_config.yml");
-                    try {
-                        Files.move(Punisher.toPath(), newfile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        Punisher.createNewFile();
-                    } catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    }
-                    saveDefaultConfig();
-                    PunisherConfig.set("Configversion", this.getDescription().getVersion());
-                }
-            }
-            if (this.getDescription().getVersion().contains("LEGACY")) {
+            } else if (this.getDescription().getVersion().contains("LEGACY")) {
                 getLogger().info(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
                 getLogger().info(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
                 getLogger().info(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have new features.");
@@ -208,6 +193,21 @@ public class BungeeMain extends Plugin implements Listener {
                 getLogger().info(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The Punisher");
                 getLogger().info(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
                 update = false;
+            }
+            //check config version
+            if (!PunisherConfig.getString("Configversion").equals(this.getDescription().getVersion())) {
+                getLogger().warning(prefix + ChatColor.RED + "Old config.yml detected!");
+                getLogger().warning(prefix + ChatColor.RED + "Renaming old config to old_config.yml!");
+                File newfile = new File(getDataFolder(), "old_config.yml");
+                try {
+                    Files.move(Punisher.toPath(), newfile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Punisher.createNewFile();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+                saveDefaultConfig();
+                PunisherConfig.set("Configversion", this.getDescription().getVersion());
+                saveConfig();
             }
             //check if rep on vote should be enabled
             if ((getProxy().getPluginManager().getPlugin("NuVotifier") != null || getProxy().getPluginManager().getPlugin("Votifier") != null) && PunisherConfig.getBoolean("Voting.addRepOnVote")) {
@@ -251,9 +251,7 @@ public class BungeeMain extends Plugin implements Listener {
                 openConnection();
             } catch (SQLException e) {
                 getLogger().severe(prefix + ChatColor.RED + "MYSQL Connection failed!!! (SQLException)");
-                mysqlfail(e);
-                onDisable();
-                return;
+                throw new Exception("Mysql connection failed", e);
             }
             //setup mysql
             setupmysql();
@@ -491,24 +489,33 @@ public class BungeeMain extends Plugin implements Listener {
         } catch (SQLException e) {
             getLogger().severe(prefix + ChatColor.RED + "Could not Setup MYSQL!!");
             mysqlfail(e);
+            onDisable();
         }
     }
 
-    public void mysqlfail(Exception e) {
-        getLogger().severe(prefix + e);
-        getProxy().getPluginManager().unregisterListeners(this);
-        getProxy().getPluginManager().unregisterCommands(this);
-        getLogger().severe(prefix + ChatColor.RED + "Plugin Disabled!");
+    private void mysqlfail(Exception e) {
+        BungeeMain.Logs.severe("Error Message: " + e.getMessage());
+        StringBuilder stacktrace = new StringBuilder();
+        for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+            stacktrace.append(stackTraceElement.toString()).append("\n");
+        }
+        BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
+        if (e.getCause() != null)
+            BungeeMain.Logs.severe("Error Cause Message: " + e.getCause().getMessage());
+        ProxyServer.getInstance().getLogger().warning(" ");
+        ProxyServer.getInstance().getLogger().warning(prefix + ChatColor.RED + "An error was encountered and debug info was logged to log file!");
+        ProxyServer.getInstance().getLogger().warning(prefix + ChatColor.RED + "Error Message: " + e.getMessage());
+        if (e.getCause() != null)
+            ProxyServer.getInstance().getLogger().warning(prefix + ChatColor.RED + "Error Cause Message: " + e.getCause().getMessage());
+        ProxyServer.getInstance().getLogger().warning(" ");
+        e.printStackTrace();
+        AdminChat.sendMessage("ERROR ENCOUNTERED: " + e.getMessage());
+        AdminChat.sendMessage("This error will be logged! Please inform a dev asap, this plugin may no longer function as intended!");
     }
 
     private void testConnection() {
         getProxy().getScheduler().schedule(this, () -> {
-            if (!testConnectionManual()) {
-                mysqlfail(new SQLException("Unable to reestablish MySQL connection!"));
-                getProxy().getPluginManager().unregisterListeners(getInstance());
-                getProxy().getPluginManager().unregisterCommands(getInstance());
-                getLogger().severe(prefix + ChatColor.RED + "Plugin disabled!");
-            }
+            if (!testConnectionManual()) mysqlfail(new SQLException("Unable to reestablish MySQL connection!"));
         }, 1, 60, TimeUnit.MINUTES);
     }
 
