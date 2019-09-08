@@ -1,8 +1,10 @@
 package me.fiftyfour.punisher.bungee.systems;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 
 import java.sql.SQLException;
 import java.text.DecimalFormat;
@@ -30,13 +32,23 @@ public class ReputationSystem {
                     Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
                     punishMnger.issue(ban, null, targetname, false, true, false);
                 } catch (SQLException e) {
-                    plugin.mysqlfail(e);
+                    try {
+                        throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                    } catch (PunishmentsDatabaseException pde) {
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(pde);
+                    }
                     if (plugin.testConnectionManual()) {
                         try {
                             Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
                             punishMnger.issue(ban, null, targetname, false, true, false);
                         } catch (SQLException sqle) {
-                            plugin.mysqlfail(sqle);
+                            try {
+                                throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                            } catch (PunishmentsDatabaseException pde) {
+                                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                errorHandler.log(pde);
+                            }
                         }
                     }
                 }
@@ -63,13 +75,18 @@ public class ReputationSystem {
                     Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
                     punishMnger.issue(ban, null, targetname, false, true, false);
                 } catch (SQLException e) {
-                    plugin.mysqlfail(e);
+                    try {
+                        throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                    } catch (PunishmentsDatabaseException pde) {
+                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        errorHandler.log(pde);
+                    }
                     if (plugin.testConnectionManual()) {
                         try {
-                            Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
-                            punishMnger.issue(ban, null, targetname, false, true, false);
-                        } catch (SQLException sqle) {
-                            plugin.mysqlfail(sqle);
+                            throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
                         }
                     }
                 }
@@ -91,13 +108,23 @@ public class ReputationSystem {
                 Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
                 punishMnger.issue(ban, null, targetname, false, true, false);
             } catch (SQLException e) {
-                plugin.mysqlfail(e);
+                try {
+                    throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(pde);
+                }
                 if (plugin.testConnectionManual()) {
                     try {
                         Punishment ban = new Punishment(Punishment.Reason.Manual, "Overly Toxic (Rep dropped below -10)", (long) 3.154e+12, Punishment.Type.BAN, uuid, "CONSOLE");
                         punishMnger.issue(ban, null, targetname, false, true, false);
                     } catch (SQLException sqle) {
-                        plugin.mysqlfail(sqle);
+                        try {
+                            throw new PunishmentsDatabaseException("Issuing perm rep ban", targetname, ReputationSystem.class.getName(), e);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
+                        }
                     }
                 }
             }

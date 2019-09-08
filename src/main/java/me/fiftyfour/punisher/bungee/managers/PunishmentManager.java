@@ -2,11 +2,11 @@ package me.fiftyfour.punisher.bungee.managers;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
-import me.fiftyfour.punisher.universal.exceptions.PunishmentCalculationException;
-import me.fiftyfour.punisher.universal.exceptions.PunishmentIssueException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentCalculationException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentIssueException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -62,8 +62,7 @@ public class PunishmentManager {
             }
         }
         double repLoss;
-        if (type == Punishment.Type.ALL) repLoss = calculateRepLoss(reason, Punishment.Type.ALL, targetuuid);
-        else repLoss = calculateRepLoss(reason, type, targetuuid);
+        repLoss = calculateRepLoss(reason, type, targetuuid);
         createHistory(targetuuid);
         if (player == null && punishment.getPunisherUUID() != null)
             createStaffHistory(punishment.getPunisherUUID());
@@ -131,8 +130,7 @@ public class PunishmentManager {
                 }
                 if (minusRep)
                     ReputationSystem.minusRep(targetname, targetuuid, repLoss);
-                if (type != Punishment.Type.ALL)
-                    return;
+                return;
             }
             case KICK: {
                 target = plugin.getProxy().getPlayer(UUIDFetcher.formatUUID(targetuuid));
@@ -162,8 +160,7 @@ public class PunishmentManager {
                 }
                 if (minusRep)
                     ReputationSystem.minusRep(targetname, targetuuid, repLoss);
-                if (type != Punishment.Type.ALL)
-                    return;
+                return;
             }
             case MUTE: {
                 target = plugin.getProxy().getPlayer(UUIDFetcher.formatUUID(targetuuid));
@@ -279,8 +276,7 @@ public class PunishmentManager {
                 }
                 if (minusRep)
                     ReputationSystem.minusRep(targetname, targetuuid, repLoss);
-                if (type != Punishment.Type.ALL)
-                    return;
+                return;
             }
             case BAN: {
                 target = plugin.getProxy().getPlayer(UUIDFetcher.formatUUID(targetuuid));
@@ -419,7 +415,7 @@ public class PunishmentManager {
             ResultSet resultshist = stmthist.executeQuery();
             if (resultshist.next()) {
                 int current;
-                if (reason.toString().contains("Manual")) {
+                if (reason.toString().contains("Manual")) {//todo error here when punishment.Reason.Manual "column 'Manual' not found"
                     current = resultshist.getInt("Manual_Punishments");
                 }else{
                     current = resultshist.getInt(reason.toString());
@@ -518,7 +514,6 @@ public class PunishmentManager {
     }
 
     public double calculateRepLoss(@NotNull Punishment.Reason reason, @NotNull Punishment.Type type, @NotNull String targetUUID) throws SQLException {
-        if (type == Punishment.Type.ALL) return 0;
         if (reason.toString().contains("Manual") && (type == Punishment.Type.BAN || type == Punishment.Type.MUTE))
             return BungeeMain.PunisherConfig.getDouble("ReputationScale." + type.toString() + "." + 5);
         if (reason.toString().contains("Manual") && (type == Punishment.Type.WARN || type == Punishment.Type.KICK))
