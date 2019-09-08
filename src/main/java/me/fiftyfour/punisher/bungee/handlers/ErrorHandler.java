@@ -4,6 +4,7 @@ import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.event.LoginEvent;
@@ -16,12 +17,20 @@ public class ErrorHandler {
     public static ErrorHandler getInstance(){return INSTANCE;}
 
     public void log(Throwable e){
-        BungeeMain.Logs.severe(e.getMessage());
+        BungeeMain.Logs.severe("Error Message: " + e.getMessage());
         StringBuilder stacktrace = new StringBuilder();
         for (StackTraceElement stackTraceElement : e.getStackTrace()) {
             stacktrace.append(stackTraceElement.toString()).append("\n");
         }
         BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
+        if (e.getCause() != null)
+            BungeeMain.Logs.severe("Error Cause Message: " + e.getCause().getMessage());
+        ProxyServer.getInstance().getLogger().warning(" ");
+        ProxyServer.getInstance().getLogger().warning(plugin.prefix + ChatColor.RED + "An error was encountered and debug info was logged to log file!");
+        ProxyServer.getInstance().getLogger().warning(plugin.prefix + ChatColor.RED + "Error Message: " + e.getMessage());
+        if (e.getCause() != null)
+            ProxyServer.getInstance().getLogger().warning(plugin.prefix + ChatColor.RED + "Error Cause Message: " + e.getCause().getMessage());
+        ProxyServer.getInstance().getLogger().warning(" ");
     }
 
     private void detailedAlert(Throwable e, CommandSender sender){
@@ -45,7 +54,6 @@ public class ErrorHandler {
 
     public void loginError(LoginEvent event){
         event.setCancelled(true);
-        event.setCancelReason(new TextComponent(ChatColor.RED + "ERROR: Luckperms was unable to fetch your permission data!\n If this error persists please contact an admin+"));
-        event.completeIntent(plugin);
+        event.setCancelReason(new TextComponent(ChatColor.RED + "ERROR: An error occurred during your login process and we were unable to fetch required data.\n Please inform an admin+ asap this plugin may no longer function as intended!"));
     }
 }
