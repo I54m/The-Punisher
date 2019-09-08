@@ -104,23 +104,23 @@ StaffChatOnMuteDeny: true
 
 Kick Message:
   "&cYou have been Kicked from the server!
-  \nYou were Kicked for the reason: &f%reason%!
-  \nYou have done something against our server rules!
-  \nSome of our punishments result in a kick with no warning!"
+  \n&cYou were Kicked for the reason: &f%reason%!
+  \n&cYou have done something against our server rules!
+  \n&cSome of our punishments result in a kick with no warning!"
 
 TempBan Message:
   "&cYou have been Banned from the server!
-  \nYou were Banned for the reason: &f%reason%!
-  \nThis ban expires in: %days%d %hours%h %minutes%m %seconds%s!
-  \nYou have done something against our server rules!
-  \nSome of our punishments result in a ban with no warning!"
+  \n&cYou were Banned for the reason: &f%reason%!
+  \n&cThis ban expires in: %days%d %hours%h %minutes%m %seconds%s!
+  \n&cYou have done something against our server rules!
+  \n&cSome of our punishments result in a ban with no warning!"
 
 PermBan Message:
   "&cYou have been Banned from the server!
-  \nYou were Banned for the reason: &f%reason%!
-  \nThis ban does not expire!
-  \nYou have done something against our server rules!
-  \nSome of our punishments result in a ban with no warning!"
+  \n&cYou were Banned for the reason: &f%reason%!
+  \n&cThis ban does not expire!
+  \n&cYou have done something against our server rules!
+  \n&cSome of our punishments result in a ban with no warning!"
 
 #How much reputation should be taken off the player for each offence number
 #KICK and WARN only have 1 offence
