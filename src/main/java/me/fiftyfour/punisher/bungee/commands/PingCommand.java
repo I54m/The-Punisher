@@ -18,13 +18,12 @@ public class PingCommand extends Command {
             if (commandSender instanceof ProxiedPlayer) {
                 ProxiedPlayer player = (ProxiedPlayer) commandSender;
                 int ping = player.getPing();
-                if (ping <= 50) {
+                if (ping <= 50)
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "Ping: " + ChatColor.GREEN + ping + "ms"));
-                } else if (ping <= 100) {
+                else if (ping <= 150)
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "Ping: " + ChatColor.GOLD + ping + "ms"));
-                } else {
+                else
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "Ping: " + ChatColor.RED + ping + "ms"));
-                }
             }else{
                 commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             }
@@ -37,13 +36,12 @@ public class PingCommand extends Command {
                     return;
                 }
                 int ping = target.getPing();
-                if (ping <= 50) {
+                if (ping <= 50)
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "" + target + "'s Ping: " + ChatColor.GREEN + ping + "ms"));
-                } else if (ping <= 100) {
+                else if (ping <= 150)
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "" + target + "'s Ping: " + ChatColor.GOLD + ping + "ms"));
-                } else {
+                else
                     player.sendMessage(new TextComponent(ChatColor.DARK_AQUA + "" + target + "'s Ping: " + ChatColor.RED + ping + "ms"));
-                }
             }else{
                 commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             }

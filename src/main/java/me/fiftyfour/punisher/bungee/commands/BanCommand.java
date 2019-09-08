@@ -1,10 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.universal.systems.Permissions;
@@ -139,16 +140,14 @@ public class BanCommand extends Command {
                 return;
             }
         } catch (Exception e) {
-            player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + targetname).color(ChatColor.RED).create());
-            player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-            BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + targetname);
-            BungeeMain.Logs.severe("Error message: " + e.getMessage());
-            StringBuilder stacktrace = new StringBuilder();
-            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                stacktrace.append(stackTraceElement.toString()).append("\n");
+            try {
+                throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
+            } catch (DataFecthException dfe) {
+                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                errorHandler.log(dfe);
+                errorHandler.alert(e, player);
+                return;
             }
-            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-            return;
         }
         try {
             Punishment ban = new Punishment(Punishment.Reason.Manual, reasonString, (length + System.currentTimeMillis()), Punishment.Type.BAN, targetuuid, player.getUniqueId().toString().replace("-", ""));
@@ -157,22 +156,17 @@ public class BanCommand extends Command {
             plugin.getLogger().severe(plugin.prefix + e);
             sqlfails++;
             if (sqlfails > 5) {
-                StringBuilder sb = new StringBuilder();
-                for (String args : strings){
-                    sb.append(args).append(" ");
+                try {
+                    throw new PunishmentsDatabaseException("Issuing ban on a player ", targetname, this.getName(), e, "/ban", strings);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(pde);
+                    errorHandler.alert(pde, commandSender);
+                    return;
                 }
-                plugin.getProxy().getPluginManager().unregisterCommand(this);
-                commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                return;
             }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);
         }
-        BungeeMain.Logs.info(targetname + " Was Banned for: " + reason + " by: " + player.getName());
     }
 }

@@ -2,6 +2,8 @@ package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.systems.Permissions;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
@@ -37,16 +39,14 @@ public class KickCommand extends Command {
                     return;
                 }
             }catch (Exception e){
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + target.getName()).color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + target.getName());
-                BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                try {
+                    throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
+                } catch (DataFecthException dfe) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(dfe);
+                    errorHandler.alert(e, player);
+                    return;
                 }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                return;
             }
             StringBuilder sb = new StringBuilder();
             if (strings.length == 1) {

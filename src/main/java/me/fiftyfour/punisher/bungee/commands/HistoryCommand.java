@@ -1,9 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -17,7 +18,10 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class HistoryCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
@@ -100,28 +104,14 @@ public class HistoryCommand extends Command {
                         TextComponent status;
                         try{
                             status = futurestatus.get(5, TimeUnit.SECONDS);
-                        } catch (TimeoutException te) {
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Status creation took too long! Unable to fetch " + strings[0] + "'s status!").color(ChatColor.RED).create());
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                            BungeeMain.Logs.severe("ERROR: Status creation took too long! Unable to fetch " + strings[0] + "'s status!");
-                            BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                            StringBuilder stacktrace = new StringBuilder();
-                            for (StackTraceElement stackTraceElement : te.getStackTrace()) {
-                                stacktrace.append(stackTraceElement.toString()).append("\n");
-                            }
-                            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                            executorService1.shutdown();
-                            return;
                         } catch (Exception e) {
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s status!").color(ChatColor.RED).create());
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                            BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s status");
-                            BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                            StringBuilder stacktrace = new StringBuilder();
-                            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                                stacktrace.append(stackTraceElement.toString()).append("\n");
+                            try {
+                                throw new DataFecthException("Status was required for history check", targetname, "Punishment Status", this.getName(), e);
+                            } catch (DataFecthException dfe) {
+                                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                errorHandler.log(dfe);
+                                errorHandler.alert(dfe, commandSender);
                             }
-                            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                             executorService1.shutdown();
                             return;
                         }
@@ -136,18 +126,14 @@ public class HistoryCommand extends Command {
                     plugin.getLogger().severe(plugin.prefix + e);
                     sqlfails++;
                     if(sqlfails > 5){
-                        plugin.getProxy().getPluginManager().unregisterCommand(this);
-                        StringBuilder sb = new StringBuilder();
-                        for (String args : strings){
-                            sb.append(args).append(" ");
+                        try {
+                            throw new PunishmentsDatabaseException("Checking player's history", targetname, this.getName(), e, "/history", strings);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
+                            errorHandler.alert(pde, commandSender);
+                            return;
                         }
-                        commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                        commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                        plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                        plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                        BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                        BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                        return;
                     }
                     if (plugin.testConnectionManual())
                         this.execute(commandSender, strings);

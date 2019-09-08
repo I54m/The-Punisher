@@ -1,8 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.systems.Permissions;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
@@ -53,16 +56,14 @@ public class WarnCommand extends Command {
                 return;
             }
         }catch (Exception e){
-            player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Luckperms was unable to fetch permission data on: " + target.getName()).color(ChatColor.RED).create());
-            player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-            BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + target.getName());
-            BungeeMain.Logs.severe("Error message: " + e.getMessage());
-            StringBuilder stacktrace = new StringBuilder();
-            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                stacktrace.append(stackTraceElement.toString()).append("\n");
+            try {
+                throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
+            } catch (DataFecthException dfe) {
+                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                errorHandler.log(dfe);
+                errorHandler.alert(e, player);
+                return;
             }
-            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-            return;
         }
         try {
             Punishment warn = new Punishment(Punishment.Reason.Manual, sb.toString(), null, Punishment.Type.WARN, targetuuid, player.getUniqueId().toString().replace("-", ""));
@@ -71,18 +72,14 @@ public class WarnCommand extends Command {
             plugin.getLogger().severe(plugin.prefix + e);
             sqlfails++;
             if(sqlfails > 5){
-                plugin.getProxy().getPluginManager().unregisterCommand(this);
-                StringBuilder sbError = new StringBuilder();
-                for (String args : strings){
-                    sbError.append(args).append(" ");
+                try {
+                    throw new PunishmentsDatabaseException("Issuing warn on a player", target.getName(), this.getName(), e, "/warn", strings);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(pde);
+                    errorHandler.alert(pde, commandSender);
+                    return;
                 }
-                commandSender.sendMessage(new ComponentBuilder(this.getName() + sbError.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                plugin.getLogger().severe(plugin.prefix + this.getName() + sbError.toString() + " has thrown an exception more than 5 times!");
-                plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                return;
             }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);

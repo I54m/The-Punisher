@@ -34,7 +34,7 @@ public class SuperBroadcast extends Command {
         ProxyServer.getInstance().broadcast(new ComponentBuilder("Announcement: ").color(ChatColor.LIGHT_PURPLE).bold(true).append(sb.toString()).color(ChatColor.WHITE).create());
         ProxyServer.getInstance().broadcast(new TextComponent("\n"));
         for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
-            ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.LIGHT_PURPLE + "An Announcement has been made in chat!")).fadeIn(10).stay(100).fadeOut(10).send(all);
+            ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.LIGHT_PURPLE + "An Announcement has been made in chat!")).fadeIn(15).stay(75).fadeOut(15).send(all);
         }
     }
 }

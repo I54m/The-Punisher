@@ -23,9 +23,9 @@ public class IpCommand extends Command {
         }
         ProxiedPlayer target = ProxyServer.getInstance().getPlayer(strings[0]);
         if (target == null){
-            commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not a player's name!").color(ChatColor.RED).create());
+            commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not an online player's name!").color(ChatColor.RED).create());
             return;
         }
-        commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(target.getName() + "'s ip address is: " + target.getAddress().getHostString()).color(ChatColor.RED).create());
+        commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(target.getName() + "'s ip address is: " + target.getAddress().getAddress().toString()).color(ChatColor.RED).create());
     }
 }

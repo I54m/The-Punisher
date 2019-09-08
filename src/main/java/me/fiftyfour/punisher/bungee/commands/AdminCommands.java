@@ -3,8 +3,12 @@ package me.fiftyfour.punisher.bungee.commands;
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
 import me.fiftyfour.punisher.bungee.discordbot.DiscordMain;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.bungee.listeners.PlayerLogin;
+import me.fiftyfour.punisher.bungee.listeners.ServerConnect;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.systems.UpdateChecker;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
@@ -15,6 +19,7 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,12 +68,17 @@ public class AdminCommands extends Command {
                         return;
                     }
                     if (strings[1].equalsIgnoreCase("reset")) {
-                        plugin.saveDefaultPunishments();
-                        plugin.loadConfig();
-                        BungeeMain.Logs.warning(player.getName() + " reset punishments");
                         AdminChat.sendMessage("\n");
+                        plugin.saveDefaultPunishments();
+                        BungeeMain.Logs.warning(player.getName() + " reset punishments");
                         AdminChat.sendMessage(player.getName() + " has reset all punishments");
                         AdminChat.sendMessage("This means automatic punishments will use default values!");
+                        try {
+                            plugin.loadConfig();
+                        } catch (Exception e) {
+                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("Unable to reload config files, try restarting your server and try again.").color(ChatColor.RED).create());
+                            AdminChat.sendMessage("Plugin failed to reload config! Try restarting the server and try again!");
+                        }
                         AdminChat.sendMessage("\n");
                     } else if (strings[1].equalsIgnoreCase("delete")) {
                         BungeeMain.PunishmentsConfig.set("Minor_Chat_Offence", null);
@@ -88,14 +98,12 @@ public class AdminCommands extends Command {
                         BungeeMain.PunishmentsConfig.set("Other_Minor_Offence", null);
                         BungeeMain.PunishmentsConfig.set("Player_Impersonation", null);
                         plugin.saveConfig();
-                        plugin.loadConfig();
-                        AdminChat.sendMessage("\n");
-                        AdminChat.sendMessage(player.getName() + " has REMOVED all punishments!!!");
-                        AdminChat.sendMessage("THIS IS NOT RECOMMENDED AND CAN NOT BE UNDONE!!!");
-                        AdminChat.sendMessage("The plugin will no longer punish as intended!!!");
+                        AdminChat.sendMessage(" ");
+                        AdminChat.sendMessage(player.getName() + " has REMOVED all automatic punishment values!");
+                        AdminChat.sendMessage("Automatic punishments will not longer work!");
                         AdminChat.sendMessage("To reset punishments to their defaults do: ");
                         AdminChat.sendMessage("/punisher punishments reset");
-                        AdminChat.sendMessage("\n");
+                        AdminChat.sendMessage(" ");
                         BungeeMain.Logs.warning(player.getName() + " deleted punishments");
                     }else {
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Usage: /punisher punishments <reset|delete>").color(ChatColor.RED).create());
@@ -116,18 +124,14 @@ public class AdminCommands extends Command {
                             plugin.getLogger().severe(plugin.prefix + e);
                             sqlfails++;
                             if (sqlfails > 5) {
-                                StringBuilder sb = new StringBuilder();
-                                for (String args : strings){
-                                    sb.append(args).append(" ");
+                                try {
+                                    throw new PunishmentsDatabaseException("Resetting bans", null, this.getName(), e);
+                                } catch (PunishmentsDatabaseException pde) {
+                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    errorHandler.log(pde);
+                                    errorHandler.alert(pde, commandSender);
+                                    return;
                                 }
-                                plugin.getProxy().getPluginManager().unregisterCommand(this);
-                                commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                                plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                                plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                                return;
                             }
                             if (plugin.testConnectionManual())
                                 this.execute(commandSender, strings);
@@ -153,18 +157,14 @@ public class AdminCommands extends Command {
                             plugin.getLogger().severe(plugin.prefix + e);
                             sqlfails++;
                             if (sqlfails > 5) {
-                                StringBuilder sb = new StringBuilder();
-                                for (String args : strings){
-                                    sb.append(args).append(" ");
+                                try {
+                                    throw new PunishmentsDatabaseException("Resetting mutes", null, this.getName(), e);
+                                } catch (PunishmentsDatabaseException pde) {
+                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    errorHandler.log(pde);
+                                    errorHandler.alert(pde, commandSender);
+                                    return;
                                 }
-                                plugin.getProxy().getPluginManager().unregisterCommand(this);
-                                commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                                plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                                plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                                return;
                             }
                             if (plugin.testConnectionManual())
                                 this.execute(commandSender, strings);
@@ -176,37 +176,11 @@ public class AdminCommands extends Command {
                     }
                 } else if (strings[0].equalsIgnoreCase("reload")) {
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("Reloading plugin. Please wait....").color(ChatColor.RED).create());
-                    plugin.getProxy().getPluginManager().unregisterCommands(plugin);
-                    plugin.getProxy().getPluginManager().unregisterListeners(plugin);
                     plugin.onDisable();
                     plugin.onEnable();
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("Plugin Reloaded!").color(ChatColor.RED).create());
                     AdminChat.sendMessage(player.getName() + " has reloaded the plugin!");
-                    plugin.getProxy().getScheduler().runAsync(plugin, () -> {
-                        punisher.resetCache();
-                        for (ProxiedPlayer players : plugin.getProxy().getPlayers()) {
-                            if (punisher.isBanned(player.getUniqueId().toString().replace("-", ""))) {
-                                Punishment ban = punisher.getBan(player.getUniqueId().toString().replace("-", ""));
-                                Long banleftmillis = ban.getDuration() - System.currentTimeMillis();
-                                int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
-                                int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
-                                int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
-                                int secondsleft = (int) (banleftmillis / 1000 % 60);
-                                String reason = ban.getMessage();
-                                if (daysleft > 730) {
-                                    String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
-                                            .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
-                                            .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason);
-                                    players.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
-                                } else {
-                                    String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
-                                            .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
-                                            .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason);
-                                    players.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
-                                }
-                            }
-                        }
-                    });
+                    plugin.getProxy().getScheduler().runAsync(plugin, this::reloadRecovery);
                     BungeeMain.Logs.warning(player.getName() + " reloaded the plugin ");
                 } else if (strings[0].equalsIgnoreCase("testsql")){
                     plugin.testConnectionManual();
@@ -214,6 +188,11 @@ public class AdminCommands extends Command {
                 }else if (strings[0].equalsIgnoreCase("help")){
                     plugin.getProxy().getPluginManager().dispatchCommand(commandSender, "punisherhelp");
                 }else if (strings[0].equalsIgnoreCase("reseteverything")){
+                    AdminChat.sendMessage(player.getName() + " has initiated a full reset of everything, please wait....");
+                    BungeeMain.Logs.warning(player.getName() + " has initiated a full reset of everything!");
+                    AdminChat.sendMessage("Plugin command and event listeners will be unloaded during this process!");
+                    plugin.getProxy().getPluginManager().unregisterCommands(plugin);
+                    plugin.getProxy().getPluginManager().unregisterListeners(plugin);
                     try{
                         String sql1 = "DROP DATABASE `" + BungeeMain.database + "`";
                         PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
@@ -223,65 +202,125 @@ public class AdminCommands extends Command {
                         plugin.getLogger().severe(plugin.prefix + e);
                         sqlfails++;
                         if (sqlfails > 5) {
-                            StringBuilder sb = new StringBuilder();
-                            for (String args : strings){
-                                sb.append(args).append(" ");
+                            try {
+                                throw new PunishmentsDatabaseException("Resetting entire punishment database", null, this.getName(), e);
+                            } catch (PunishmentsDatabaseException pde) {
+                                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                errorHandler.log(pde);
+                                errorHandler.alert(pde, commandSender);
+                                AdminChat.sendMessage("An error occurred during the reset process, nothing was reset!");
+                                AdminChat.sendMessage("Reloading plugin, please wait...");
+                                BungeeMain.Logs.warning("An error occurred during the reset process, nothing was reset!");
+                                plugin.onDisable();
+                                plugin.onEnable();
+                                AdminChat.sendMessage("Plugin reloaded!");
+                                return;
                             }
-                            plugin.getProxy().getPluginManager().unregisterCommand(this);
-                            commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                            commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                            plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                            plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                            BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                            BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                            return;
                         }
                         if (plugin.testConnectionManual())
                             this.execute(commandSender, strings);
                     }
+                    AdminChat.sendMessage("Reset all mutes!");
+                    AdminChat.sendMessage("Reset all bans!");
+                    AdminChat.sendMessage("Reset all stored ips!");
+                    AdminChat.sendMessage("Reset all player history!");
+                    AdminChat.sendMessage("Reset all staff history!");
+                    plugin.onDisable();
                     BungeeMain.Punishments.delete();
+                    AdminChat.sendMessage("Reset all punishments!");
+                    AdminChat.sendMessage("This means automatic punishments will use default values!");
                     BungeeMain.Reputation.delete();
+                    AdminChat.sendMessage("Reset all reputation scores!");
                     BungeeMain.PlayerInfo.delete();
+                    AdminChat.sendMessage("Reset all stored playerinfo!");
                     if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.Enabled")) {
                         BungeeMain.DiscordIntegration.delete();
                         DiscordMain.verifiedUsers.clear();
-                        AdminChat.sendMessage("");
-                        AdminChat.sendMessage(player.getName() + " has reset all linked discord users!");
+                        DiscordMain.userCodes.clear();
+                        AdminChat.sendMessage("Reset all linked discord users!");
                     }
-                    BungeeMain.PlayerInfo.delete();
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all punishments");
-                    AdminChat.sendMessage("This means automatic punishments will use default values!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all reputation scores!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all stored playerinfo!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all mutes!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all bans!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all stored ips!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all player history!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all staff history!");
-                    AdminChat.sendMessage("");
-                    AdminChat.sendMessage(player.getName() + " has reset all reputation scores!");
                     AdminChat.sendMessage("");
                     AdminChat.sendMessage("Reloading plugin please wait....");
                     AdminChat.sendMessage("");
-                    plugin.getProxy().getPluginManager().unregisterCommands(plugin);
-                    plugin.getProxy().getPluginManager().unregisterListeners(plugin);
-                    plugin.onDisable();
                     plugin.onEnable();
-                    AdminChat.sendMessage(player.getName() + " has reloaded the plugin!");
+                    AdminChat.sendMessage("Reloaded the plugin!");
+                    AdminChat.sendMessage("Warning, plugin is in an out of the box state and will need to be configured properly!");
+                    AdminChat.sendMessage("Collecting required info on online players in order to solve errors..");
+                    ServerConnect.lastJoinId = 0;
                     for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()){
                         BungeeMain.RepStorage.set(all.getUniqueId().toString().replace("-", ""), 5.0);
+                        BungeeMain.InfoConfig.set(all.getUniqueId().toString().replace("-", "") + ".lastlogin", System.currentTimeMillis());
+                        BungeeMain.InfoConfig.set(all.getUniqueId().toString().replace("-", "") + ".lastserver", all.getServer().getInfo().getName());
+                        BungeeMain.InfoConfig.set("lastjoinid", (ServerConnect.lastJoinId + 1));
+                        BungeeMain.InfoConfig.set(String.valueOf((ServerConnect.lastJoinId + 1)), player.getUniqueId().toString().replace("-", ""));
+                        ServerConnect.lastJoinId++;
+                        BungeeMain.saveInfo();
+                        plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+                            String fetcheduuid = all.getUniqueId().toString().replace("-", "");
+                            String targetName = all.getName();
+                            try {
+                                //update ip and make sure there is one in the database
+                                String sqlip = "SELECT * FROM `altlist` WHERE UUID='" + fetcheduuid + "'";
+                                PreparedStatement stmtip = plugin.connection.prepareStatement(sqlip);
+                                ResultSet resultsip = stmtip.executeQuery();
+                                if (resultsip.next()) {
+                                    if (!resultsip.getString("ip").equals(all.getAddress().getHostString())) {
+                                        String oldip = resultsip.getString("ip");
+                                        String sqlipadd = "UPDATE `altlist` SET `ip`='" + all.getAddress().getAddress().getHostAddress() + "' WHERE `ip`='" + oldip + "' ;";
+                                        PreparedStatement stmtipadd = plugin.connection.prepareStatement(sqlipadd);
+                                        stmtipadd.executeUpdate();
+                                        stmtipadd.close();
+                                    }
+                                } else {
+                                    String sql1 = "INSERT INTO `altlist` (`UUID`, `ip`) VALUES ('" + fetcheduuid + "', '" + all.getAddress().getAddress().getHostAddress() + "');";
+                                    PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                                    stmt1.executeUpdate();
+                                    stmt1.close();
+                                }
+                                stmtip.close();
+                                resultsip.close();
+                            } catch (SQLException sqle) {
+                                try {
+                                    throw new PunishmentsDatabaseException("Updating ip in altlist", targetName, PlayerLogin.class.getName(), sqle);
+                                } catch (PunishmentsDatabaseException pde) {
+                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    errorHandler.log(pde);
+                                    errorHandler.adminChatAlert(sqle, all);
+                                }
+                            }
+                            try {
+                                //update ip hist
+                                String sql = "SELECT * FROM `iphist` WHERE UUID='" + fetcheduuid + "'";
+                                PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                                ResultSet results = stmt.executeQuery();
+                                if (results.next()) {
+                                    if (!results.getString("ip").equals(all.getAddress().getHostString())) {
+                                        String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + all.getAddress().getAddress().getHostAddress() + "');";
+                                        PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
+                                        addipstmt.executeUpdate();
+                                        addipstmt.close();
+                                    }
+                                } else {
+                                    String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + all.getAddress().getAddress().getHostAddress() + "');";
+                                    PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
+                                    addipstmt.executeUpdate();
+                                    addipstmt.close();
+                                }
+                            } catch (SQLException sqle) {
+                                try {
+                                    throw new PunishmentsDatabaseException("Updating ip in iphist", targetName, PlayerLogin.class.getName(), sqle);
+                                } catch (PunishmentsDatabaseException pde) {
+                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    errorHandler.log(pde);
+                                    errorHandler.adminChatAlert(sqle, all);
+                                }
+                            }
+                        });
                     }
+                    AdminChat.sendMessage("Required info collected!");
                     AdminChat.sendMessage("");
                     AdminChat.sendMessage("Plugin successfully reset!");
-                    BungeeMain.Logs.warning(player.getName() + " reset everything");
+                    AdminChat.sendMessage("");
                 }else if (strings[0].equalsIgnoreCase("version")){
                     if (!update) {
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Current Bungeecord Version: " + plugin.getDescription().getVersion()).color(ChatColor.GREEN).create());
@@ -318,6 +357,32 @@ public class AdminCommands extends Command {
             commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("/punisher version - ").color(ChatColor.RED).append("Get the current version").color(ChatColor.WHITE).create());
             if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.Enabled"))
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("/discord admin - ").color(ChatColor.RED).append("Admin commands for the discord integration").color(ChatColor.WHITE).create());
+        }
+    }
+
+    private void reloadRecovery() {
+        punisher.resetCache();
+        for (ProxiedPlayer players : plugin.getProxy().getPlayers()) {
+            if (punisher.isBanned(players.getUniqueId().toString().replace("-", ""))) {
+                Punishment ban = punisher.getBan(players.getUniqueId().toString().replace("-", ""));
+                long banleftmillis = ban.getDuration() - System.currentTimeMillis();
+                int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
+                int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
+                int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
+                int secondsleft = (int) (banleftmillis / 1000 % 60);
+                String reason = ban.getMessage();
+                if (daysleft > 730) {
+                    String banMessage = BungeeMain.PunisherConfig.getString("PermBan Message").replace("%days%", String.valueOf(daysleft))
+                            .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                            .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason);
+                    players.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
+                } else {
+                    String banMessage = BungeeMain.PunisherConfig.getString("TempBan Message").replace("%days%", String.valueOf(daysleft))
+                            .replace("%hours%", String.valueOf(hoursleft)).replace("%minutes%", String.valueOf(minutesleft))
+                            .replace("%seconds%", String.valueOf(secondsleft)).replace("%reason%", reason);
+                    players.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', banMessage)));
+                }
+            }
         }
     }
 }

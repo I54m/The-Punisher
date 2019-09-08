@@ -1,10 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -57,30 +58,22 @@ public class UnpunishCommand extends Command {
                 if (i + 1 < strings.length)reason.append(" ");
             }
             String reasonString = reason.toString().replace("-", "_").replace(" ", "_").replace("/", "_");
-            ArrayList<String> reasonsList;
-            reasonsList = new ArrayList<>();
-            reasonsList.add("Minor_Chat_Offence");
-            reasonsList.add("Major_Chat_Offence");
-            reasonsList.add("DDoS_DoX_Threats");
-            reasonsList.add("Inapproprioate_Link");
-            reasonsList.add("Scamming");
-            reasonsList.add("X_Raying");
-            reasonsList.add("AutoClicker");
-            reasonsList.add("Fly_Speed_Hacking");
-            reasonsList.add("Malicious_PvP_Hacks");
-            reasonsList.add("Server_Advertisment");
-            reasonsList.add("Greifing");
-            reasonsList.add("Exploiting");
-            reasonsList.add("Tpa_Trapping");
-            reasonsList.add("Impersonation");
             if (reasonString.toLowerCase().contains("manual")) {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Manual Punishments may not be removed from history!").color(ChatColor.RED).create());
                 return;
             }
-            if (!(reasonsList.contains(reasonString))) {
+            ArrayList<String> reasonslist = new ArrayList<>();
+            StringBuilder reasons = new StringBuilder();
+            for (Punishment.Reason reason1 : Punishment.Reason.values()) {
+                if (!reason1.toString().contains("Manual")) {
+                    reasons.append(reason1.toString()).append(" ");
+                }
+                reasonslist.add(reason1.toString());
+            }
+            if (!reasonslist.contains(reasonString)) {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not a punishment reason!").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Reasons are as follows (Case Sensitive):").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append(reasonsList.toString().replace("[", "").replace("]", "")).color(ChatColor.RED).create());
+                player.sendMessage(new ComponentBuilder(plugin.prefix).append(reasons.toString()).color(ChatColor.RED).create());
                 return;
             }
             if (future != null) {
@@ -111,24 +104,14 @@ public class UnpunishCommand extends Command {
                     plugin.getLogger().severe(plugin.prefix + e);
                     sqlfails++;
                     if(sqlfails > 5){
-                        plugin.getProxy().getPluginManager().unregisterCommand(this);
-                        StringBuilder sb = new StringBuilder();
-                        for (String args : strings){
-                            sb.append(args).append(" ");
+                        try {
+                            throw new PunishmentsDatabaseException("Unpunishing a player", targetname, this.getName(), e, "/unpunish", strings);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
+                            errorHandler.alert(pde, commandSender);
+                            return;
                         }
-                        commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                        commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                        plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                        plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                        e.printStackTrace();
-                        BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                        BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                        StringBuilder stacktrace = new StringBuilder();
-                        for (StackTraceElement stackTraceElement : e.getStackTrace()){
-                            stacktrace.append(stackTraceElement.toString()).append("\n");
-                        }
-                        BungeeMain.Logs.severe(stacktrace.toString());
-                        return;
                     }
                     if (plugin.testConnectionManual())
                         this.execute(commandSender, strings);

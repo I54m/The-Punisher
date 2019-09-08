@@ -1,10 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import com.google.common.collect.Lists;
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -18,7 +18,10 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class AltsCommand extends Command {
     private BungeeMain plugin = BungeeMain.getInstance();
@@ -31,6 +34,7 @@ public class AltsCommand extends Command {
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
+        String targetname = "NOT SET";
         try {
             if (commandSender instanceof ProxiedPlayer) {
                 ProxiedPlayer player = (ProxiedPlayer) commandSender;
@@ -38,7 +42,6 @@ public class AltsCommand extends Command {
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("Check a players alt or reset their stored ip").color(ChatColor.RED).append("\nUsage: /alts <reset|get> <player>").color(ChatColor.WHITE).create());
                     return;
                 }
-                String targetname;
                 if (!strings[1].contains(".")) {
                     ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[1]);
                     Future<String> future = null;
@@ -57,7 +60,7 @@ public class AltsCommand extends Command {
                         } catch (Exception e) {
                             try {
                                 throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                            }catch (DataFecthException dfe){
+                            } catch (DataFecthException dfe) {
                                 ErrorHandler errorHandler = ErrorHandler.getInstance();
                                 errorHandler.log(dfe);
                                 errorHandler.alert(dfe, commandSender);
@@ -100,7 +103,7 @@ public class AltsCommand extends Command {
                         results.close();
                     } else if (strings[0].equalsIgnoreCase("get")) {
                         ExecutorService executorService1;
-                        Future<TextComponent> futurestatus = null;
+                        Future<TextComponent> futurestatus;
                         Status statusClass = new Status();
                         statusClass.setTargetuuid(targetuuid);
                         executorService1 = Executors.newSingleThreadExecutor();
@@ -133,30 +136,16 @@ public class AltsCommand extends Command {
                             }
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append(altslist.toString()).color(ChatColor.RED).create());
                             TextComponent status;
-                            try{
+                            try {
                                 status = futurestatus.get(5, TimeUnit.SECONDS);
-                            } catch (TimeoutException te) {
-                                player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Status creation took too long! Unable to fetch " + strings[0] + "'s status!").color(ChatColor.RED).create());
-                                player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                                BungeeMain.Logs.severe("ERROR: Status creation took too long! Unable to fetch " + strings[0] + "'s status!");
-                                BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                                StringBuilder stacktrace = new StringBuilder();
-                                for (StackTraceElement stackTraceElement : te.getStackTrace()) {
-                                    stacktrace.append(stackTraceElement.toString()).append("\n");
-                                }
-                                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                                executorService1.shutdown();
-                                return;
                             } catch (Exception e) {
-                                player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s status!").color(ChatColor.RED).create());
-                                player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                                BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s status");
-                                BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                                StringBuilder stacktrace = new StringBuilder();
-                                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                                try {
+                                    throw new DataFecthException("Status was required for alts check", targetname, "Punishment Status", this.getName(), e);
+                                } catch (DataFecthException dfe) {
+                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    errorHandler.log(dfe);
+                                    errorHandler.alert(dfe, commandSender);
                                 }
-                                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                                 executorService1.shutdown();
                                 return;
                             }
@@ -204,14 +193,14 @@ public class AltsCommand extends Command {
             plugin.getLogger().severe(plugin.prefix + e);
             sqlfails++;
             if (sqlfails > 5) {
-                plugin.getProxy().getPluginManager().unregisterCommand(this);
-                commandSender.sendMessage(new ComponentBuilder(this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                plugin.getLogger().severe(plugin.prefix + this.getName() + Lists.asList(strings[0], strings).toString() + " has thrown an exception more than 5 times!");
-                plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                return;
+                try {
+                    throw new PunishmentsDatabaseException("Alts command (/alts" + strings[0] + strings[1] + ")", targetname, this.getName(), e);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(pde);
+                    errorHandler.alert(pde, commandSender);
+                    return;
+                }
             }
             if (plugin.testConnectionManual())
                 this.execute(commandSender, strings);

@@ -1,10 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.fetchers.PlayerInfo;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -15,13 +15,13 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerInfoCommand extends Command {
     public PlayerInfoCommand() {
@@ -58,32 +58,17 @@ public class PlayerInfoCommand extends Command {
         if (future != null) {
             try {
                 targetuuid = future.get(10, TimeUnit.SECONDS);
-            } catch (TimeoutException te) {
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + strings[0] + "'s uuid!");
-                BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : te.getStackTrace()){
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
-                }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                executorService.shutdown();
-                return;
             } catch (Exception e) {
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("ERROR: ").color(ChatColor.DARK_RED).append("Unexpected error while executing command! Unable to fetch " + strings[0] + "'s uuid!").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("This error will be logged! Please Inform an admin asap, this plugin will no longer function as intended! ").color(ChatColor.RED).create());
-                BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getName() + " Unable to fetch " + strings[0] + "'s uuid");
-                BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : e.getStackTrace()){
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                try {
+                    throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
+                } catch (DataFecthException dfe) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(dfe);
+                    errorHandler.alert(dfe, commandSender);
                 }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 executorService.shutdown();
                 return;
             }
-            executorService.shutdown();
         }
         if (targetuuid == null) {
             player.sendMessage(new ComponentBuilder(plugin.prefix).append(strings[0] + " is not a player's name!").color(ChatColor.RED).create());
@@ -92,17 +77,6 @@ public class PlayerInfoCommand extends Command {
         String targetname = NameFetcher.getName(targetuuid);
         if (targetname == null) {
             targetname = strings[0];
-        }
-        try {
-            //send plugin message
-            ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
-            DataOutputStream out = new DataOutputStream(outbytes);
-            out.writeUTF("Punisher");
-            out.writeUTF("GetAAC");
-            out.writeUTF(targetuuid);
-            player.sendData("BungeeCord", outbytes.toByteArray());
-        }catch (IOException ioe){
-            ioe.printStackTrace();
         }
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.setTargetName(targetname);
@@ -124,44 +98,31 @@ public class PlayerInfoCommand extends Command {
             info = futureInfo.get(20, TimeUnit.SECONDS);
         } catch (Exception e) {
             try {
-                throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
+                throw new DataFecthException("Player Info was required for next step", strings[0], "player info", this.getName(), e);
             }catch (DataFecthException dfe){
                 ErrorHandler errorHandler = ErrorHandler.getInstance();
                 errorHandler.log(dfe);
                 errorHandler.alert(dfe, commandSender);
             }
-            executorService.shutdown();
+            executorServiceinfo.shutdown();
             return;
         }
         executorServiceinfo.shutdown();
         TextComponent status;
         try{
             status = futurestatus.get(5, TimeUnit.SECONDS);
-        } catch (TimeoutException te) {
-            BungeeMain.Logs.severe("ERROR: Status creation took too long! Unable to fetch " + targetname + "'s status!");
-            BungeeMain.Logs.severe("Error message: " + te.getMessage());
-            StringBuilder stacktrace = new StringBuilder();
-            for (StackTraceElement stackTraceElement : te.getStackTrace()) {
-                stacktrace.append(stackTraceElement.toString()).append("\n");
-            }
-            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-            status = new TextComponent("Unable to fetch status!");
-            status.setColor(ChatColor.RED);
         } catch (Exception e) {
-            BungeeMain.Logs.severe("ERROR: Unexpected error while trying executing command in class: " + this.getClass().getName() + " Unable to fetch " + targetname + "'s status");
-            BungeeMain.Logs.severe("Error message: " + e.getMessage());
-            StringBuilder stacktrace = new StringBuilder();
-            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                stacktrace.append(stackTraceElement.toString()).append("\n");
+            try {
+                throw new DataFecthException("Status was required for player info", targetname, "Punishment Status", this.getName(), e);
+            } catch (DataFecthException dfe) {
+                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                errorHandler.log(dfe);
+                errorHandler.alert(dfe, commandSender);
             }
-            BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-            status = new TextComponent("Unable to fetch status!");
-            status.setColor(ChatColor.RED);
+            executorService1.shutdown();
+            return;
         }
         executorService1.shutdown();
-        BungeeMain.Logs.severe("ERROR: Status creation took too long! Unable to fetch " + targetname + "'s status!");
-        BungeeMain.Logs.severe("Error message: ");
-        BungeeMain.Logs.severe("Stack Trace: ");
         player.sendMessage(new ComponentBuilder("|--------").strikethrough(true).color(ChatColor.RED).append(targetname + "'s Player Info").strikethrough(false).color(ChatColor.GREEN).append("--------|").strikethrough(true).color(ChatColor.RED).create());
         player.sendMessage(new ComponentBuilder("UUID: ").color(ChatColor.RED).append(info.get("uuid")).color(ChatColor.GREEN).create());
         if (info.containsKey("prefix"))

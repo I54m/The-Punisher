@@ -1,9 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -80,18 +81,14 @@ public class UnbanCommand extends Command {
                     plugin.getLogger().severe(plugin.prefix + e);
                     sqlfails++;
                     if(sqlfails > 5){
-                        plugin.getProxy().getPluginManager().unregisterCommand(this);
-                        StringBuilder sb = new StringBuilder();
-                        for (String args : strings){
-                            sb.append(args).append(" ");
+                        try {
+                            throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
+                            errorHandler.alert(pde, commandSender);
+                            return;
                         }
-                        commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                        commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                        plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                        plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                        BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                        BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                        return;
                     }
                     if (plugin.testConnectionManual())
                         this.execute(commandSender, strings);
@@ -147,18 +144,14 @@ public class UnbanCommand extends Command {
                     plugin.getLogger().severe(plugin.prefix + e);
                     sqlfails++;
                     if(sqlfails > 5){
-                        plugin.getProxy().getPluginManager().unregisterCommand(this);
-                        StringBuilder sb = new StringBuilder();
-                        for (String args : strings){
-                            sb.append(args).append(" ");
+                        try {
+                            throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
+                        } catch (PunishmentsDatabaseException pde) {
+                            ErrorHandler errorHandler = ErrorHandler.getInstance();
+                            errorHandler.log(pde);
+                            errorHandler.alert(pde, commandSender);
+                            return;
                         }
-                        commandSender.sendMessage(new ComponentBuilder(this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!").color(ChatColor.RED).create());
-                        commandSender.sendMessage(new ComponentBuilder("Disabling command to prevent further damage to database").color(ChatColor.RED).create());
-                        plugin.getLogger().severe(plugin.prefix + this.getName() + " " + sb.toString() + " has thrown an exception more than 5 times!");
-                        plugin.getLogger().severe(plugin.prefix + "Disabling command to prevent further damage to database!");
-                        BungeeMain.Logs.severe(this.getName() + " has thrown an exception more than 5 times!");
-                        BungeeMain.Logs.severe("Disabling command to prevent further damage to database!");
-                        return;
                     }
                     if (plugin.testConnectionManual())
                         this.execute(commandSender, strings);
