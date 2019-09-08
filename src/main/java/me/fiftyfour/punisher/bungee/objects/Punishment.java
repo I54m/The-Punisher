@@ -22,7 +22,7 @@ public class Punishment {
     }
 
     public enum Type {
-        BAN, KICK, MUTE, WARN
+        BAN, KICK, MUTE, WARN, ALL
     }
     
     public enum Reason {
