@@ -10,8 +10,6 @@ import net.md_5.bungee.event.EventHandler;
 
 public class PlayerDisconnect implements Listener {
 
-    private static BungeeMain plugin = BungeeMain.getInstance();
-
     @EventHandler
     public void onPlayerDisconnect(PlayerDisconnectEvent event){
         if (DiscordMain.jda == null) return;
