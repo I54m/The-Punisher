@@ -1,4 +1,4 @@
-package me.fiftyfour.punisher.bukkit.events;
+package me.fiftyfour.punisher.bukkit.listeners;
 
 import me.fiftyfour.punisher.bukkit.BukkitMain;
 import org.bukkit.event.EventHandler;
