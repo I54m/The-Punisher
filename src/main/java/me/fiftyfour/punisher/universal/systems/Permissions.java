@@ -1,7 +1,7 @@
 package me.fiftyfour.punisher.universal.systems;
 
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;
 import me.lucko.luckperms.LuckPerms;
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Permissions {
 
-    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) throws IllegalStateException {
+    public static Boolean higher(ProxiedPlayer player, String targetuuid, String targetname) throws IllegalArgumentException {
         UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
         User user = LuckPerms.getApi().getUser(targetname);
         if (user == null) {
@@ -41,45 +41,7 @@ public class Permissions {
             }
             executorService.shutdown();
             if(user == null){
-                throw new IllegalStateException("User instance cannot be null!! (check punisher logs for more info)");
-            }
-        }
-        ContextManager cm = LuckPerms.getApi().getContextManager();
-        Contexts contexts = cm.lookupApplicableContexts(user).orElse(cm.getStaticContexts());
-        PermissionData permissionData = user.getCachedData().getPermissionData(contexts);
-        int playerlevel = 0;
-        int targetlevel = 0;
-        for (int i = 0; i <= 3; i++){
-            if (player.hasPermission("punisher.punish.level." + i))
-                playerlevel = i;
-            if (permissionData.getPermissionValue("punisher.punish.level." + i).asBoolean())
-                targetlevel = i;
-        }
-        if (playerlevel < targetlevel)
-            return false;
-        else if (player.hasPermission("punisher.bypass") && playerlevel == targetlevel)
-            return true;
-        else{
-            return true;
-        }
-    }
-    public static Boolean higher(Player player, String targetuuid, String targetname) throws Exception{
-        UUID formattedUUID = UUIDFetcher.formatUUID(targetuuid);
-        User user = LuckPerms.getApi().getUser(targetname);
-        if (user == null) {
-            UserFetcher userFetcher = new UserFetcher();
-            userFetcher.setUuid(formattedUUID);
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<User> userFuture = executorService.submit(userFetcher);
-            try {
-                user = userFuture.get(5, TimeUnit.SECONDS);
-            }catch (Exception e){
-                executorService.shutdown();
-                throw new Exception();
-            }
-            executorService.shutdown();
-            if(user == null){
-                throw new IllegalStateException();
+                throw new IllegalArgumentException("User instance cannot be null!!");
             }
         }
         ContextManager cm = LuckPerms.getApi().getContextManager();
@@ -102,4 +64,27 @@ public class Permissions {
         }
     }
 
+    public static Boolean higher(Player player, User user) throws IllegalArgumentException {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null!!");
+        }
+        ContextManager cm = LuckPerms.getApi().getContextManager();
+        Contexts contexts = cm.lookupApplicableContexts(user).orElse(cm.getStaticContexts());
+        PermissionData permissionData = user.getCachedData().getPermissionData(contexts);
+        int playerlevel = 0;
+        int targetlevel = 0;
+        for (int i = 0; i <= 3; i++){
+            if (player.hasPermission("punisher.punish.level." + i))
+                playerlevel = i;
+            if (permissionData.getPermissionValue("punisher.punish.level." + i).asBoolean())
+                targetlevel = i;
+        }
+        if (playerlevel < targetlevel)
+            return false;
+        else if (player.hasPermission("punisher.bypass") && playerlevel == targetlevel)
+            return true;
+        else{
+            return true;
+        }
+    }
 }
