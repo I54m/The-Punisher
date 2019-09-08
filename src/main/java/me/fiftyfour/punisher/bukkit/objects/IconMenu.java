@@ -24,7 +24,7 @@ public class IconMenu implements Listener {
     private onClick click;
     private ItemStack[] items;
 
-    public IconMenu(String name, int size, onClick click) {
+    IconMenu(String name, int size, onClick click) {
         this.name = name;
         this.size = size * 9;
         items = new ItemStack[this.size];
@@ -39,12 +39,17 @@ public class IconMenu implements Listener {
     public void setName(String name) {
         this.name = name;
     }
+
+    void setClick(onClick onClick) {
+        this.click = onClick;
+    }
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         for (Player p : this.getViewers())
             close(p);
     }
-    public void open(Player p) {
+
+    void open(Player p) {
         p.openInventory(getInventory(p));
         viewing.add(p.getName());
     }
@@ -55,7 +60,8 @@ public class IconMenu implements Listener {
                 inv.setItem(i, items[i]);
         return inv;
     }
-    public void close(Player p) {
+
+    void close(Player p) {
         if (p.getOpenInventory().getTitle().equals(name))
             p.closeInventory();
     }
@@ -70,7 +76,7 @@ public class IconMenu implements Listener {
         if (viewing.contains(event.getWhoClicked().getName())) {
             event.setCancelled(true);
             Player p = (Player) event.getWhoClicked();
-            if (event.getCurrentItem() != null) {
+            if (event.getClickedInventory() != null && event.getCurrentItem() != null && Arrays.equals(event.getClickedInventory().getContents(), this.items)) {
                 if (click.click(p, this, event.getSlot(), event.getCurrentItem()))
                     close(p);
             }
@@ -81,7 +87,8 @@ public class IconMenu implements Listener {
         if (viewing.contains(event.getPlayer().getName()))
             viewing.remove(event.getPlayer().getName());
     }
-    public void addButton(int position, ItemStack item, String name, String... lore) {
+
+    void addButton(int position, ItemStack item, String name, String... lore) {
         items[position] = getItem(item, name, lore);
     }
     private ItemStack getItem(ItemStack item, String name, String... lore) {
@@ -91,7 +98,8 @@ public class IconMenu implements Listener {
         item.setItemMeta(im);
         return item;
     }
-    public interface onClick {
+
+    interface onClick {
         boolean click(Player clicker, IconMenu menu, int slot, ItemStack item);
     }
 }
