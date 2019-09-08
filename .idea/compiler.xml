@@ -9,8 +9,5 @@
         <module name="The-Punisher" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="The-Punisher (1)" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
 </project>
