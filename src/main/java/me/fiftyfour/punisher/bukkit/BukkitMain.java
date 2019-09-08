@@ -2,8 +2,12 @@ package me.fiftyfour.punisher.bukkit;
 
 import be.maximvdw.placeholderapi.PlaceholderAPI;
 import me.fiftyfour.punisher.bukkit.commands.*;
-import me.fiftyfour.punisher.bukkit.events.PluginMessage;
-import me.fiftyfour.punisher.bukkit.events.PostLogin;
+import me.fiftyfour.punisher.bukkit.listeners.PluginMessage;
+import me.fiftyfour.punisher.bukkit.listeners.PostLogin;
+import me.fiftyfour.punisher.bukkit.objects.LevelOnePunishMenu;
+import me.fiftyfour.punisher.bukkit.objects.LevelThreePunishMenu;
+import me.fiftyfour.punisher.bukkit.objects.LevelTwoPunishMenu;
+import me.fiftyfour.punisher.bukkit.objects.LevelZeroPunishMenu;
 import me.fiftyfour.punisher.universal.systems.UpdateChecker;
 import me.lucko.luckperms.api.LuckPermsApi;
 import org.bukkit.Bukkit;
@@ -20,11 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BukkitMain extends JavaPlugin implements Listener {
-    private static BukkitMain instance;
-    public String chatState;
     public static boolean update = false;
     public static Map<String, Double> repCache = new HashMap<>();
+    private static BukkitMain instance;
     private static long nextRepUpdate;
+    public String chatState;
+    private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
 
     public static BukkitMain getInstance() {
         return instance;
@@ -33,24 +38,40 @@ public class BukkitMain extends JavaPlugin implements Listener {
     private static void setInstance(BukkitMain instance) {
         BukkitMain.instance = instance;
     }
-    private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+
+    public static void updateRepCache() {
+        nextRepUpdate = System.nanoTime() + 500000000;
+        for (Player players : Bukkit.getOnlinePlayers()) {
+            try {
+                ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
+                DataOutputStream out = new DataOutputStream(outbytes);
+                out.writeUTF("getrepcache");
+                out.writeUTF(players.getUniqueId().toString().replace("-", ""));
+                players.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), "punisher:minor", outbytes.toByteArray());
+                out.close();
+                outbytes.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
+    }
 
     @Override
     public void onEnable() {
         //Check if version of mc is compatible
-        if (this.getServer().getVersion().contains("1.13")){
-            getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft 1.13.x");
-            getServer().getConsoleSender().sendMessage("Please downgrade to 1.12.2 to get this version to work!");
-            getServer().getConsoleSender().sendMessage("Or update to the punisher 1.9+ to use this spigot version.");
-            getServer().getConsoleSender().sendMessage("Other compatible spigot versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
-            getServer().getConsoleSender().sendMessage("Plugin Disabled!");
-            this.setEnabled(false);
-            return;
-        }else if (!this.getServer().getVersion().contains("1.12") && !this.getServer().getVersion().contains("1.11") && !this.getServer().getVersion().contains("1.10")
-        && !this.getServer().getVersion().contains("1.9") && !this.getServer().getVersion().contains("1.8")){
+//        if (this.getServer().getVersion().contains("1.13")) {
+//            getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft 1.13.x");
+//            getServer().getConsoleSender().sendMessage("Please downgrade to 1.12.2 to get this version to work!");
+//            getServer().getConsoleSender().sendMessage("Or update to the punisher 1.9+ to use this spigot version.");
+//            getServer().getConsoleSender().sendMessage("Other compatible spigot versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+//            getServer().getConsoleSender().sendMessage("Plugin Disabled!");
+//            this.setEnabled(false);
+//            return;
+//        } else
+        if (!this.getServer().getVersion().contains("1.13")) {
             getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft " + this.getServer().getVersion());
-            getServer().getConsoleSender().sendMessage("Please upgrade to 1.8.8 to get this version to work!");
-            getServer().getConsoleSender().sendMessage("Other compatible versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
+            getServer().getConsoleSender().sendMessage("Please use the punisher 1.8-LEGACY for this version of minecraft!");
+            getServer().getConsoleSender().sendMessage("Or consider updating to 1.13.x to have the latest new features!");
             getServer().getConsoleSender().sendMessage("Plugin Disabled!");
             this.setEnabled(false);
             return;
@@ -62,7 +83,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
                 this.setEnabled(false);
                 return;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             getServer().getConsoleSender().sendMessage("Luck Perms not detected, Plugin has been Disabled!");
             this.setEnabled(false);
             return;
@@ -70,16 +91,22 @@ public class BukkitMain extends JavaPlugin implements Listener {
         //set variables
         setInstance(this);
         chatState = "on";
+        //setup punish gui menus
+        LevelZeroPunishMenu.setupMenu();
+        LevelOnePunishMenu.setupMenu();
+        LevelTwoPunishMenu.setupMenu();
+        LevelThreePunishMenu.setupMenu();
         //register commands
-        this.getCommand("punish").setExecutor(new PunishCommand());
-        this.getCommand("clearchat").setExecutor(new ClearChat());
-        this.getCommand("togglechat").setExecutor(new ToggleChat());
-        this.getCommand("bold").setExecutor(new BoldCommand());
-        this.getCommand("punisherbukkit").setExecutor(new PunisherBukkit());
+        getCommand("punish").setExecutor(new PunishCommand());
+        getCommand("clearchat").setExecutor(new ClearChat());
+        getCommand("togglechat").setExecutor(new ToggleChat());
+        getCommand("bold").setExecutor(new BoldCommand());
+        getCommand("punisherbukkit").setExecutor(new PunisherBukkit());
         //register plugin message channels
-        Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PunishCommand());
-        Bukkit.getMessenger().registerIncomingPluginChannel(this, "BungeeCord", new PluginMessage());
-        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, "punisher:minor", new PluginMessage());
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "punisher:minor");
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, "punisher:main", new PunishCommand());
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "punisher:main");
         //check for update
         getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Checking for updates...");
         if (!this.getDescription().getVersion().contains("BETA") && !this.getDescription().getVersion().contains("PRE-RELEASE")
@@ -101,18 +128,20 @@ public class BukkitMain extends JavaPlugin implements Listener {
             } catch (Exception e) {
                 getServer().getConsoleSender().sendMessage(ChatColor.RED + e.getMessage());
             }
-        } if (this.getDescription().getVersion().contains("LEGACY")){
+        }
+        if (this.getDescription().getVersion().contains("LEGACY")) {
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have the new features.");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
             update = false;
-        } else {
+        } else if (this.getDescription().getVersion().contains("BETA") && this.getDescription().getVersion().contains("PRE-RELEASE")
+                && this.getDescription().getVersion().contains("DEV-BUILD") && this.getDescription().getVersion().contains("SNAPSHOT")) {
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The Punisher");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
             update = false;
         }
-        if (Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")){
+        if (Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")) {
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "MVdWPlaceholderApi detected, enabling reputation placeholder...");
             Bukkit.getPluginManager().registerEvents(new PostLogin(), this);
             PlaceholderAPI.registerPlaceholder(this, "punisher_reputation", (event) -> {
@@ -143,23 +172,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
                 return "-";
             });
 
-        }else getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "MVDWPlaceholderApi Not detected reputation placeholder will not work!");
-    }
-
-    public static void updateRepCache(){
-        nextRepUpdate = System.nanoTime() + 500000000;
-        for (Player players : Bukkit.getOnlinePlayers()){
-            try {
-                ByteArrayOutputStream outbytes = new ByteArrayOutputStream();
-                DataOutputStream out = new DataOutputStream(outbytes);
-                out.writeUTF("getrepcache");
-                out.writeUTF(players.getUniqueId().toString().replace("-", ""));
-                players.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), "BungeeCord", outbytes.toByteArray());
-                out.close();
-                outbytes.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
+        } else
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "MVDWPlaceholderApi Not detected reputation placeholder will not work!");
     }
 }
