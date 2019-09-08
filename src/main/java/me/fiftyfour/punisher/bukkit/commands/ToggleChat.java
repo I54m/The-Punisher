@@ -46,7 +46,7 @@ public class ToggleChat implements CommandExecutor {
             }
             if (plugin.chatState.equals("on")) {
                 plugin.chatState = "off";
-                sendPluginMessage(player, "BungeeCord", "chatToggled", "off");
+                sendPluginMessage(player, "punisher:main", "chatToggled", "off");
                 Bukkit.broadcastMessage("\n");
                 Bukkit.broadcastMessage(prefix + ChatColor.RED + ChatColor.BOLD + "Chat Has Been toggled off!!");
                 Bukkit.broadcastMessage("\n");
@@ -54,7 +54,7 @@ public class ToggleChat implements CommandExecutor {
 
             } else if (plugin.chatState.equals("off")) {
                 plugin.chatState = "on";
-                sendPluginMessage(player, "BungeeCord", "chatToggled", "on");
+                sendPluginMessage(player, "punisher:main", "chatToggled", "on");
                 Bukkit.broadcastMessage("\n");
                 Bukkit.broadcastMessage(prefix + ChatColor.GREEN + ChatColor.BOLD + "Chat Has Been toggled on!!");
                 Bukkit.broadcastMessage("\n");

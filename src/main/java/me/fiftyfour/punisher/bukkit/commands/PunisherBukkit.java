@@ -14,7 +14,11 @@ public class PunisherBukkit implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
-        if (commandSender.hasPermission("Punisher.bukkit.admin")) {
+        if (commandSender.hasPermission("punisher.bukkit.admin")) {
+            if (strings.length <= 0) {
+                commandSender.sendMessage(prefix + ChatColor.GREEN + "/punisherbukkit version");
+                return true;
+            }
             if (strings[0].equalsIgnoreCase("version")) {
                 if (!BukkitMain.update) {
                     commandSender.sendMessage(prefix + ChatColor.GREEN + "Current Bukkit Version: " + plugin.getDescription().getVersion());
