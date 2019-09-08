@@ -1,7 +1,10 @@
 package me.fiftyfour.punisher.bungee.fetchers;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import me.fiftyfour.punisher.universal.fetchers.UserFetcher;
@@ -47,14 +50,12 @@ public class PlayerInfo implements Callable<Map<String, String>> {
             try {
                 user = userFuture.get(5, TimeUnit.SECONDS);
             }catch (Exception e){
-                BungeeMain.Logs.severe("ERROR: Luckperms was unable to fetch permission data on: " + targetName);
-                BungeeMain.Logs.severe("This Error was encountered when trying to get a prefix so to avoid issues the prefix was set to \"\"");
-                BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : e.getStackTrace()){
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                try {
+                    throw new DataFecthException("User prefix required for chat message to avoid issues the prefix was set to \"\"", targetName, "User Instance", StaffChat.class.getName(), e);
+                } catch (DataFecthException dfe) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(dfe);
                 }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 user = null;
             }
             executorService.shutdown();
@@ -75,7 +76,10 @@ public class PlayerInfo implements Callable<Map<String, String>> {
                 punishLevel = 1;
             else if (permissionData.getPermissionValue("punisher.punish.level.0").asBoolean())
                 punishLevel = 0;
-            info.put("punishlevel", String.valueOf(punishLevel));
+            if (punishLevel != -1)
+                info.put("punishlevel", String.valueOf(punishLevel));
+            else
+                info.put("punishlevel", "N/A");
             if (permissionData.getPermissionValue("punisher.bypass").asBoolean())
                 info.put("punishmentbypass", ChatColor.GREEN + "True");
             else

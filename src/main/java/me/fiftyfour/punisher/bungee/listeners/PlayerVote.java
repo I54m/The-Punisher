@@ -2,7 +2,9 @@ package me.fiftyfour.punisher.bungee.listeners;
 
 import com.vexsoftware.votifier.bungee.events.VotifierEvent;
 import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
@@ -12,7 +14,10 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 public class PlayerVote implements Listener {
@@ -34,25 +39,14 @@ public class PlayerVote implements Listener {
             Future<String> future = executorService.submit(uuidFetcher);
             try {
                 ReputationSystem.addRep(username, future.get(10, TimeUnit.SECONDS), BungeeMain.PunisherConfig.getDouble("Voting.amountOfRepToAdd"));
-            }catch (TimeoutException te) {
-                BungeeMain.Logs.severe("ERROR: Connection to mojang API took too long! Unable to fetch " + username + "'s uuid!");
-                BungeeMain.Logs.severe("Error message: " + te.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : te.getStackTrace()) {
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
-                }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
-                executorService.shutdown();
-                return;
             } catch (Exception e) {
-                e.printStackTrace();
-                BungeeMain.Logs.severe("ERROR: Unexpected error while trying to add rep after vote, Unable to fetch " + username + "'s uuid");
-                BungeeMain.Logs.severe("Error message: " + e.getMessage());
-                StringBuilder stacktrace = new StringBuilder();
-                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-                    stacktrace.append(stackTraceElement.toString()).append("\n");
+                try {
+                    throw new DataFecthException("UUID Required for next step", username, "UUID", PlayerVote.class.getName(), e);
+                } catch (DataFecthException dfe) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(dfe);
+                    errorHandler.adminChatAlert(dfe, plugin.getProxy().getConsole());
                 }
-                BungeeMain.Logs.severe("Stack Trace: " + stacktrace.toString());
                 executorService.shutdown();
                 return;
             }

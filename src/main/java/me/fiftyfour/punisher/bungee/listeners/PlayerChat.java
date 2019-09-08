@@ -2,8 +2,10 @@ package me.fiftyfour.punisher.bungee.listeners;
 
 import me.fiftyfour.punisher.bungee.BungeeMain;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
+import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -65,7 +67,7 @@ public class PlayerChat implements Listener {
                     return;
                 }
                 long mutetime = mute.getDuration();
-                Long muteleftmillis = mutetime - System.currentTimeMillis();
+                long muteleftmillis = mutetime - System.currentTimeMillis();
                 int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
                 int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
                 int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
@@ -118,17 +120,16 @@ public class PlayerChat implements Listener {
             sqlfails++;
             this.sqlfails.put(player, sqlfails);
             if (sqlfails > 5) {
-                plugin.getLogger().severe(plugin.prefix + PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + player.getName() + "!");
-                plugin.getLogger().severe(plugin.prefix + "Cancelling player's message and returning to prevent further damage to database!");
-                BungeeMain.Logs.severe(PlayerLogin.class.getName() + " has thrown an exception more than 5 times while processing login for: " + player.getName() + "!");
-                BungeeMain.Logs.severe("Cancelling player's message and returning to prevent further damage to database!");
-                event.setCancelled(true);
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("We encountered an error multiple times while processing your chat message!").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("To prevent further damage to our database we have cancelled the message!").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("Please Contact an Admin+ ASAP!").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("If you are an Admin+ please check that the database connection is functional").color(ChatColor.RED).create());
-                player.sendMessage(new ComponentBuilder(plugin.prefix).append("and that there are no errors in the database itself or config.yml!").color(ChatColor.RED).create());
-                return;
+                try {
+                    throw new PunishmentsDatabaseException("Issuing ban on a player", targetname, this.getClass().getName(), e);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    errorHandler.log(pde);
+                    errorHandler.alert(pde, player);
+                    errorHandler.adminChatAlert(pde, player);
+                    event.setCancelled(true);
+                    return;
+                }
             }
             if(plugin.testConnectionManual())
                 this.onChat(new ChatEvent(event.getSender(), event.getReceiver(), event.getMessage()));
