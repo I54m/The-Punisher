@@ -48,6 +48,7 @@ public class ServerConnect implements Listener {
             BungeeMain.InfoConfig.set(player.getUniqueId().toString().replace("-", "") + ".firstjoin", df.format(date));
             BungeeMain.InfoConfig.set(player.getUniqueId().toString().replace("-", "") + ".joinid", (lastJoinId + 1));
             BungeeMain.InfoConfig.set("lastjoinid", (lastJoinId + 1));
+            BungeeMain.InfoConfig.set(String.valueOf((lastJoinId + 1)), player.getUniqueId().toString().replace("-", ""));
             lastJoinId++;
             BungeeMain.InfoConfig.set(player.getUniqueId().toString().replace("-", "") + ".lastlogin", System.currentTimeMillis());
             if (event.getTarget() != null)
