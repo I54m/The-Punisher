@@ -156,7 +156,7 @@ public class PlayerLogin implements Listener {
                 PreparedStatement stmt = plugin.connection.prepareStatement(sql);
                 ResultSet results = stmt.executeQuery();
                 if (results.next()) {
-                    if (!results.getString("ip").equals(connection.getAddress().getHostString())) {
+                    if (!results.getString("ip").equals(connection.getAddress().getAddress().getHostAddress())) {
                         String addip = "INSERT INTO `iphist` (`UUID`, `date`, `ip`) VALUES ('" + fetcheduuid + "', '" + System.currentTimeMillis() + "', '" + connection.getAddress().getAddress().getHostAddress() + "');";
                         PreparedStatement addipstmt = plugin.connection.prepareStatement(addip);
                         addipstmt.executeUpdate();
