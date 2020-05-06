@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -14,7 +14,7 @@ public class SuperBroadcast extends Command {
         super("superbroadcast", "punisher.superbroadcast", "sb", "alert");
     }
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
@@ -31,10 +31,10 @@ public class SuperBroadcast extends Command {
         for (String message : strings)
             sb.append(message).append(" ");
         ProxyServer.getInstance().broadcast(new TextComponent("\n"));
-        ProxyServer.getInstance().broadcast(new ComponentBuilder("Announcement: ").color(ChatColor.LIGHT_PURPLE).bold(true).append(sb.toString()).color(ChatColor.WHITE).create());
+        ProxyServer.getInstance().broadcast(new ComponentBuilder("Announcement: ").color(ChatColor.AQUA).bold(true).append(sb.toString()).color(ChatColor.WHITE).create());
         ProxyServer.getInstance().broadcast(new TextComponent("\n"));
         for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
-            ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.LIGHT_PURPLE + "An Announcement has been made in chat!")).fadeIn(15).stay(75).fadeOut(15).send(all);
+            ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.AQUA + "An Announcement has been made in chat!")).fadeIn(15).stay(75).fadeOut(15).send(all);
         }
     }
 }
