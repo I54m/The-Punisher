@@ -1,15 +1,16 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.fetchers.PlayerInfo;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -28,7 +29,7 @@ public class PlayerInfoCommand extends Command {
         super("playerinfo", "punisher.playerinfo", "info", "pi", "player");
     }
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private PunisherPlugin plugin = PunisherPlugin.getInstance();
     private String targetuuid;
 
     @Override
@@ -57,12 +58,12 @@ public class PlayerInfoCommand extends Command {
         }
         if (future != null) {
             try {
-                targetuuid = future.get(10, TimeUnit.SECONDS);
+                targetuuid = future.get(1, TimeUnit.SECONDS);
             } catch (Exception e) {
                 try {
                     throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                 } catch (DataFecthException dfe) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                     errorHandler.log(dfe);
                     errorHandler.alert(dfe, commandSender);
                 }
@@ -84,23 +85,23 @@ public class PlayerInfoCommand extends Command {
         ExecutorService executorServiceinfo = Executors.newSingleThreadExecutor();
         Future<Map<String, String>> futureInfo = executorServiceinfo.submit(playerInfo);
         List<String> notes = new ArrayList<>();
-        if (BungeeMain.InfoConfig.contains(targetuuid + ".notes")){
-            notes = BungeeMain.InfoConfig.getStringList(targetuuid + ".notes");
+        if (PunisherPlugin.playerInfoConfig.contains(targetuuid + ".notes")) {
+            notes = PunisherPlugin.playerInfoConfig.getStringList(targetuuid + ".notes");
         }
         ExecutorService executorService1;
-        Future<TextComponent> futurestatus;
+        Future<BaseComponent[]> futurestatus;
         Status statusClass = new Status();
         statusClass.setTargetuuid(targetuuid);
         executorService1 = Executors.newSingleThreadExecutor();
         futurestatus = executorService1.submit(statusClass);
         Map<String, String> info;
-        try{
-            info = futureInfo.get(20, TimeUnit.SECONDS);
+        try {
+            info = futureInfo.get(2, TimeUnit.SECONDS);
         } catch (Exception e) {
             try {
                 throw new DataFecthException("Player Info was required for next step", strings[0], "player info", this.getName(), e);
-            }catch (DataFecthException dfe){
-                ErrorHandler errorHandler = ErrorHandler.getInstance();
+            } catch (DataFecthException dfe) {
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                 errorHandler.log(dfe);
                 errorHandler.alert(dfe, commandSender);
             }
@@ -108,14 +109,14 @@ public class PlayerInfoCommand extends Command {
             return;
         }
         executorServiceinfo.shutdown();
-        TextComponent status;
+        BaseComponent[] status;
         try{
-            status = futurestatus.get(5, TimeUnit.SECONDS);
+            status = futurestatus.get(500, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             try {
                 throw new DataFecthException("Status was required for player info", targetname, "Punishment Status", this.getName(), e);
             } catch (DataFecthException dfe) {
-                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                 errorHandler.log(dfe);
                 errorHandler.alert(dfe, commandSender);
             }
@@ -127,10 +128,7 @@ public class PlayerInfoCommand extends Command {
         player.sendMessage(new ComponentBuilder("UUID: ").color(ChatColor.RED).append(info.get("uuid")).color(ChatColor.GREEN).create());
         if (info.containsKey("prefix"))
             player.sendMessage(new ComponentBuilder("Rank: ").color(ChatColor.RED).append(ChatColor.translateAlternateColorCodes('&', info.get("prefix"))).create());
-        TextComponent statusTitle = new TextComponent("Status: ");
-        statusTitle.setColor(ChatColor.RED);
-        statusTitle.addExtra(status);
-        player.sendMessage(statusTitle);
+        player.sendMessage(status);
         if (info.containsKey("alts") && player.hasPermission("punisher.alts"))
             player.sendMessage(new ComponentBuilder("Alts: ").color(ChatColor.RED).append(info.get("alts")).color(ChatColor.GREEN).create());
         if (info.containsKey("ip") && player.hasPermission("punisher.alts.ip"))

@@ -34,21 +34,21 @@ public class PunishmentsDatabaseException extends SQLException {
                     sb.append(args).append(" ");
                 }
                 return causingClass + ".class has failed multiple times to access the mysql database on user " + user + ", this was caused by " + cause
-                        + ", Cause message: " + cause.getMessage() + ". Reason for request: " + reason + ". Command executed: " + command + " " + sb.toString() + ".";
+                        + ". Reason for database access request: " + reason + ". Command executed: " + command + " " + sb.toString() + ".";
             }
             return causingClass + ".class has failed multiple times to access the mysql database on user " + user + ", this was caused by " + cause
-                    + ", Cause message: " + cause.getMessage() + ". Reason for request: " + reason + ".";
+                    + ". Reason for database access request: " + reason + ".";
         } else {
             if (command != null && commandline.length > 0) {
                 StringBuilder sb = new StringBuilder();
                 for (String args : commandline) {
                     sb.append(args).append(" ");
                 }
-                return causingClass + ".class has failed multiple times to access the mysql database on user " + user + ", this was caused by " + cause
-                        + ", Cause message: " + cause.getMessage() + ". Reason for request: " + reason + ". Command executed: " + command + " " + sb.toString() + ".";
+                return causingClass + ".class has failed to access the mysql database, this was caused by " + cause
+                        + ". Reason for database access request: " + reason + ". Command executed: " + command + " " + sb.toString() + ".";
             }
-            return causingClass + ".class has failed multiple times to access the mysql database, this was caused by " + cause
-                    + ", Cause message: " + cause.getMessage() + ". Reason for request: " + reason + ".";
+            return causingClass + ".class has failed to access the mysql database, this was caused by " + cause
+                    + ", Cause message: " + cause.getMessage() + ". Reason for database access request: " + reason + ".";
         }
     }
 }

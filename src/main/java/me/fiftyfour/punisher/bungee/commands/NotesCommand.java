@@ -1,10 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -25,7 +25,7 @@ public class NotesCommand extends Command {
     }
 
     private String targetuuid;
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
@@ -47,12 +47,12 @@ public class NotesCommand extends Command {
         }
         if (future != null) {
             try {
-                targetuuid = future.get(10, TimeUnit.SECONDS);
+                targetuuid = future.get(1, TimeUnit.SECONDS);
             } catch (Exception e) {
                 try {
                     throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                 }catch (DataFecthException dfe){
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                     errorHandler.log(dfe);
                     errorHandler.alert(dfe, commandSender);
                 }
@@ -77,25 +77,25 @@ public class NotesCommand extends Command {
             }
             StringBuilder notes = new StringBuilder();
             notes.append("\"");
-            for (int i = 2; i < strings.length; i ++){
+            for (int i = 2; i < strings.length; i++) {
                 notes.append(strings[i]).append(" ");
             }
             if (commandSender instanceof ProxiedPlayer) {
                 ProxiedPlayer player = (ProxiedPlayer) commandSender;
                 notes.append("\" - ").append(player.getName());
-            }else {
+            } else {
                 notes.append("\" - CONSOLE");
             }
-            if (BungeeMain.InfoConfig.contains(targetuuid + ".notes")){
-                List<String> previousNotes = BungeeMain.InfoConfig.getStringList(targetuuid + ".notes");
+            if (PunisherPlugin.playerInfoConfig.contains(targetuuid + ".notes")) {
+                List<String> previousNotes = PunisherPlugin.playerInfoConfig.getStringList(targetuuid + ".notes");
                 previousNotes.add(notes.toString());
-                BungeeMain.InfoConfig.set(targetuuid + ".notes", previousNotes);
-            }else {
+                PunisherPlugin.playerInfoConfig.set(targetuuid + ".notes", previousNotes);
+            } else {
                 List<String> notesList = new ArrayList<>();
                 notesList.add(notes.toString());
-                BungeeMain.InfoConfig.set(targetuuid + ".notes", notesList);
+                PunisherPlugin.playerInfoConfig.set(targetuuid + ".notes", notesList);
             }
-            BungeeMain.saveInfo();
+            PunisherPlugin.saveInfo();
             commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Note Added to " + targetname).color(ChatColor.GREEN).create());
         }else if (strings[0].equalsIgnoreCase("remove")){
             if (strings.length < 3){
@@ -110,23 +110,23 @@ public class NotesCommand extends Command {
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(strings[2] + " is not a valid number").color(ChatColor.RED).create());
                 return;
             }
-            if (!BungeeMain.InfoConfig.contains(targetuuid + ".notes")){
+            if (!PunisherPlugin.playerInfoConfig.contains(targetuuid + ".notes")) {
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + " Does not have any notes!").color(ChatColor.RED).create());
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Add one by doing: /notes add <player> <note>").color(ChatColor.WHITE).create());
                 return;
             }
-            List<String> previousNotes = BungeeMain.InfoConfig.getStringList(targetuuid + ".notes");
+            List<String> previousNotes = PunisherPlugin.playerInfoConfig.getStringList(targetuuid + ".notes");
             previousNotes.remove(id - 1);
-            BungeeMain.InfoConfig.set(targetuuid + ".notes", previousNotes);
-            BungeeMain.saveInfo();
+            PunisherPlugin.playerInfoConfig.set(targetuuid + ".notes", previousNotes);
+            PunisherPlugin.saveInfo();
             commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Note with id " + id + " removed from " + targetname).color(ChatColor.GREEN).create());
         }else if (strings[0].equalsIgnoreCase("list")){
-            if (!BungeeMain.InfoConfig.contains(targetuuid + ".notes")){
+            if (!PunisherPlugin.playerInfoConfig.contains(targetuuid + ".notes")) {
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + " Does not have any notes!").color(ChatColor.RED).create());
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Add one by doing: /notes add <player> <note>").color(ChatColor.WHITE).create());
                 return;
             }
-            List<String> previousNotes = BungeeMain.InfoConfig.getStringList(targetuuid + ".notes");
+            List<String> previousNotes = PunisherPlugin.playerInfoConfig.getStringList(targetuuid + ".notes");
             commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Notes for " + targetname + ":").color(ChatColor.GREEN).create());
             for(String note : previousNotes){
                 commandSender.sendMessage(new ComponentBuilder(previousNotes.indexOf(note) + ". ").color(ChatColor.GREEN).append(note).color(ChatColor.GREEN).create());

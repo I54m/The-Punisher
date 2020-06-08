@@ -1,11 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
-import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.bungee.managers.ReputationManager;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 public class viewRepCommand extends Command {
     private String targetuuid;
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     public viewRepCommand() {
         super("viewrep", "punisher.viewrep", "vrep");
@@ -48,12 +48,12 @@ public class viewRepCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                    targetuuid = future.get(1, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     try {
                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                     }catch (DataFecthException dfe){
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                         errorHandler.log(dfe);
                         errorHandler.alert(dfe, commandSender);
                     }
@@ -68,7 +68,7 @@ public class viewRepCommand extends Command {
                     targetname = strings[0];
                 }
                 StringBuilder reputation = new StringBuilder();
-                String rep = ReputationSystem.getRep(targetuuid);
+                String rep = ReputationManager.getRep(targetuuid);
                 if (!(rep == null)) {
                     double repDouble;
                     try {

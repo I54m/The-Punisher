@@ -1,13 +1,13 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -24,10 +24,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class UnpunishCommand extends Command {
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
     private String targetuuid;
-    private int sqlfails = 0;
-    private PunishmentManager punishmentManager = PunishmentManager.getInstance();
+    private final PunishmentManager punishmentManager = PunishmentManager.getINSTANCE();
 
     public UnpunishCommand() {
         super("unpunish", "punisher.unpunish", "unpun");
@@ -35,6 +34,7 @@ public class UnpunishCommand extends Command {
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
+        commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Unpunish command is currently not functioning properly!").color(ChatColor.RED).create());
         if (commandSender instanceof ProxiedPlayer) {
             ProxiedPlayer player = (ProxiedPlayer) commandSender;
             if (strings.length <= 1) {
@@ -44,9 +44,9 @@ public class UnpunishCommand extends Command {
             ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
             Future<String> future = null;
             ExecutorService executorService = null;
-            if (findTarget != null){
+            if (findTarget != null) {
                 targetuuid = findTarget.getUniqueId().toString().replace("-", "");
-            }else {
+            } else {
                 UUIDFetcher uuidFetcher = new UUIDFetcher();
                 uuidFetcher.fetch(strings[0]);
                 executorService = Executors.newSingleThreadExecutor();
@@ -55,7 +55,7 @@ public class UnpunishCommand extends Command {
             StringBuilder reason = new StringBuilder();
             for (int i = 1; i < strings.length; i++) {
                 reason.append(strings[i]);
-                if (i + 1 < strings.length)reason.append(" ");
+                if (i + 1 < strings.length) reason.append(" ");
             }
             String reasonString = reason.toString().replace("-", "_").replace(" ", "_").replace("/", "_");
             if (reasonString.toLowerCase().contains("manual")) {
@@ -78,12 +78,12 @@ public class UnpunishCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                    targetuuid = future.get(1, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     try {
                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                    }catch (DataFecthException dfe){
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    } catch (DataFecthException dfe) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                         errorHandler.log(dfe);
                         errorHandler.alert(dfe, commandSender);
                     }
@@ -99,22 +99,16 @@ public class UnpunishCommand extends Command {
                 }
                 try {
                     Punishment.Reason Reason = Punishment.Reason.valueOf(reasonString);
-                    punishmentManager.revoke(new Punishment(Reason, null, null, Punishment.Type.ALL, targetuuid, null), player, targetname, true, true);
-                }catch (SQLException e){
-                    plugin.getLogger().severe(plugin.prefix + e);
-                    sqlfails++;
-                    if(sqlfails > 5){
-                        try {
-                            throw new PunishmentsDatabaseException("Unpunishing a player", targetname, this.getName(), e, "/unpunish", strings);
-                        } catch (PunishmentsDatabaseException pde) {
-                            ErrorHandler errorHandler = ErrorHandler.getInstance();
-                            errorHandler.log(pde);
-                            errorHandler.alert(pde, commandSender);
-                            return;
-                        }
+                    //todo NEED to find out type & issuedate third or maybe just get them to give an id?
+                    punishmentManager.remove(punishmentManager.punishmentLookup(null, Punishment.Type.ALL, Reason, "test", (long) 123456789, targetuuid), player, true, true, true);
+                } catch (SQLException e) {
+                    try {
+                        throw new PunishmentsDatabaseException("Unpunishing a player", targetname, this.getName(), e, "/unpunish", strings);
+                    } catch (PunishmentsDatabaseException pde) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                        errorHandler.log(pde);
+                        errorHandler.alert(pde, commandSender);
                     }
-                    if (plugin.testConnectionManual())
-                        this.execute(commandSender, strings);
                 }
             } else {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not a player's name").color(ChatColor.RED).create());

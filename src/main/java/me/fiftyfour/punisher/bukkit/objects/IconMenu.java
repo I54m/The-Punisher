@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bukkit.objects;
 
-import me.fiftyfour.punisher.bukkit.BukkitMain;
+import me.fiftyfour.punisher.bukkit.PunisherBukkit;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.bukkit.Bukkit.createInventory;
+
 public class IconMenu implements Listener {
 
     private List<String> viewing = new ArrayList<>();
@@ -23,74 +25,85 @@ public class IconMenu implements Listener {
     private int size;
     private onClick click;
     private ItemStack[] items;
+    private Inventory menu = null;
 
-    IconMenu(String name, int size, onClick click) {
-        this.name = name;
+    public IconMenu(int size) {
         this.size = size * 9;
-        items = new ItemStack[this.size];
-        this.click = click;
-        BukkitMain plugin = BukkitMain.getInstance();
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        this.items = new ItemStack[this.size];
+        Bukkit.getPluginManager().registerEvents(this, PunisherBukkit.getInstance());
     }
+
+    public IconMenu(int size, String name) {
+        this.size = size * 9;
+        this.name = name;
+        this.items = new ItemStack[this.size];
+        Bukkit.getPluginManager().registerEvents(this, PunisherBukkit.getInstance());
+    }
+
     public void setSize(int size) {
         this.size = size * 9;
         items = Arrays.copyOf(items, this.size);
     }
+
     public void setName(String name) {
         this.name = name;
+        menu = null;
     }
 
-    void setClick(onClick onClick) {
+    public void setClick(onClick onClick) {
+        if (!onClick.equals(this.click))
+            this.menu = null;
         this.click = onClick;
     }
+
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         for (Player p : this.getViewers())
             close(p);
     }
 
-    void open(Player p) {
-        p.openInventory(getInventory(p));
-        viewing.add(p.getName());
-    }
-    private Inventory getInventory(Player p) {
-        Inventory inv = Bukkit.createInventory(p, size, name);
-        for (int i = 0; i < items.length; i++)
-            if (items[i] != null)
-                inv.setItem(i, items[i]);
-        return inv;
+    public void open(Player p) {
+        if (this.menu == null || this.menu.getSize() != this.size || menu.getContents() != this.items)
+            this.menu = createInventory(null, this.size, this.name);
+        this.menu.setContents(items);
+        p.openInventory(this.menu);
+        viewing.add(p.getUniqueId().toString());
     }
 
-    void close(Player p) {
+    public void close(Player p) {
         if (p.getOpenInventory().getTitle().equals(name))
             p.closeInventory();
     }
+
     private List<Player> getViewers() {
         List<Player> viewers = new ArrayList<>();
         for (String s : viewing)
             viewers.add(Bukkit.getPlayer(s));
         return viewers;
     }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (viewing.contains(event.getWhoClicked().getName())) {
-            event.setCancelled(true);
+        if (viewing.contains(event.getWhoClicked().getUniqueId().toString())) {
             Player p = (Player) event.getWhoClicked();
             if (event.getClickedInventory() != null && event.getCurrentItem() != null && Arrays.equals(event.getClickedInventory().getContents(), this.items)) {
+                event.setCancelled(true);
                 if (click.click(p, this, event.getSlot(), event.getCurrentItem()))
                     close(p);
             }
         }
     }
+
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (viewing.contains(event.getPlayer().getName()))
-            viewing.remove(event.getPlayer().getName());
+        if (viewing.contains(event.getPlayer().getUniqueId().toString()))
+            viewing.remove(event.getPlayer().getUniqueId().toString());
     }
 
-    void addButton(int position, ItemStack item, String name, String... lore) {
+    public void addButton(int position, ItemStack item, String name, String... lore) {
         items[position] = getItem(item, name, lore);
     }
+
     private ItemStack getItem(ItemStack item, String name, String... lore) {
         ItemMeta im = item.getItemMeta();
         im.setDisplayName(name);
@@ -99,7 +112,7 @@ public class IconMenu implements Listener {
         return item;
     }
 
-    interface onClick {
+    public interface onClick {
         boolean click(Player clicker, IconMenu menu, int slot, ItemStack item);
     }
 }

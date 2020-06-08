@@ -1,16 +1,17 @@
 package me.fiftyfour.punisher.bungee.discordbot.listeners.discord;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.discordbot.DiscordMain;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.PrivateChannel;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.PrivateChannel;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class PrivateMessageReceived extends ListenerAdapter {
 
@@ -44,15 +45,13 @@ public class PrivateMessageReceived extends ListenerAdapter {
     }
 
     private void linkAccounts(User user, PrivateChannel channel, UUID uuid) {
-        Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
-        List<Role> rolesToAdd = new ArrayList<>();
-        for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
-            rolesToAdd.add(guild.getRoleById(roleids));
+        Guild guild = DiscordMain.jda.getGuildById(PunisherPlugin.config.getString("DiscordIntegration.GuildId"));
+        for (String roleids : PunisherPlugin.config.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
+            guild.addRoleToMember(guild.getMember(user), guild.getRoleById(roleids)).queue();
         }
-        guild.getController().addRolesToMember(guild.getMember(user), rolesToAdd).queue();
         channel.sendMessage("Linked: `" + user.getName() + "#" + user.getDiscriminator() + "` to minecraft user: " + NameFetcher.getName(uuid.toString().replace("-", "")) + "!" +
                 "\nTo unlink this minecraft account type \"/discord unlink\" in game").queue();
-        if (BungeeMain.PunisherConfig.getBoolean("DiscordIntegration.EnableRoleSync"))
+        if (PunisherPlugin.config.getBoolean("DiscordIntegration.EnableRoleSync"))
             channel.sendMessage("Login to the server to get your ranks synced over to the discord server").queue();
         DiscordMain.verifiedUsers.put(uuid, user.getId());
     }

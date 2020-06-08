@@ -1,12 +1,12 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -21,10 +21,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class UnbanCommand extends Command {
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
     private String targetuuid;
-    private int sqlfails = 0;
-    private PunishmentManager punishMnger = PunishmentManager.getInstance();
+    private final PunishmentManager punishMnger = PunishmentManager.getINSTANCE();
 
     public UnbanCommand() {
         super("unban", "punisher.unban", "pardon");
@@ -41,9 +40,9 @@ public class UnbanCommand extends Command {
             ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
             Future<String> future = null;
             ExecutorService executorService = null;
-            if (findTarget != null){
+            if (findTarget != null) {
                 targetuuid = findTarget.getUniqueId().toString().replace("-", "");
-            }else {
+            } else {
                 UUIDFetcher uuidFetcher = new UUIDFetcher();
                 uuidFetcher.fetch(strings[0]);
                 executorService = Executors.newSingleThreadExecutor();
@@ -51,12 +50,12 @@ public class UnbanCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                    targetuuid = future.get(1, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     try {
                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                    }catch (DataFecthException dfe){
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    } catch (DataFecthException dfe) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                         errorHandler.log(dfe);
                         errorHandler.alert(dfe, commandSender);
                     }
@@ -71,27 +70,20 @@ public class UnbanCommand extends Command {
                     targetname = strings[0];
                 }
                 try {
-                    if (punishMnger.isBanned(targetuuid)){
-                        punishMnger.revoke(punishMnger.getBan(targetuuid), player, targetname, false, true);
+                    if (punishMnger.isBanned(targetuuid)) {
+                        punishMnger.remove(punishMnger.getBan(targetuuid), player, true, false, true);
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unbanned " + targetname).color(ChatColor.GREEN).create());
-                    }else{
+                    } else {
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + " is not currently banned!").color(ChatColor.RED).create());
                     }
-                }catch (SQLException e){
-                    plugin.getLogger().severe(plugin.prefix + e);
-                    sqlfails++;
-                    if(sqlfails > 5){
-                        try {
-                            throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
-                        } catch (PunishmentsDatabaseException pde) {
-                            ErrorHandler errorHandler = ErrorHandler.getInstance();
-                            errorHandler.log(pde);
-                            errorHandler.alert(pde, commandSender);
-                            return;
-                        }
+                } catch (SQLException e) {
+                    try {
+                        throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
+                    } catch (PunishmentsDatabaseException pde) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                        errorHandler.log(pde);
+                        errorHandler.alert(pde, commandSender);
                     }
-                    if (plugin.testConnectionManual())
-                        this.execute(commandSender, strings);
                 }
             } else {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not a player's name!").color(ChatColor.RED).create());
@@ -104,9 +96,9 @@ public class UnbanCommand extends Command {
             ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
             Future<String> future = null;
             ExecutorService executorService = null;
-            if (findTarget != null){
+            if (findTarget != null) {
                 targetuuid = findTarget.getUniqueId().toString().replace("-", "");
-            }else {
+            } else {
                 UUIDFetcher uuidFetcher = new UUIDFetcher();
                 uuidFetcher.fetch(strings[0]);
                 executorService = Executors.newSingleThreadExecutor();
@@ -114,12 +106,12 @@ public class UnbanCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                    targetuuid = future.get(1, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     try {
                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                    }catch (DataFecthException dfe){
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    } catch (DataFecthException dfe) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                         errorHandler.log(dfe);
                         errorHandler.alert(dfe, commandSender);
                     }
@@ -134,27 +126,20 @@ public class UnbanCommand extends Command {
                     targetname = strings[0];
                 }
                 try {
-                    if (punishMnger.isBanned(targetuuid)){
-                        punishMnger.revoke(punishMnger.getBan(targetuuid), null, targetname, false, true);
+                    if (punishMnger.isBanned(targetuuid)) {
+                        punishMnger.remove(punishMnger.getBan(targetuuid), null, true, false, true);
                         commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unbanned " + targetname).color(ChatColor.GREEN).create());
-                    }else{
+                    } else {
                         commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + " is not currently banned!").color(ChatColor.RED).create());
                     }
-                }catch (SQLException e){
-                    plugin.getLogger().severe(plugin.prefix + e);
-                    sqlfails++;
-                    if(sqlfails > 5){
-                        try {
-                            throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
-                        } catch (PunishmentsDatabaseException pde) {
-                            ErrorHandler errorHandler = ErrorHandler.getInstance();
-                            errorHandler.log(pde);
-                            errorHandler.alert(pde, commandSender);
-                            return;
-                        }
+                } catch (SQLException e) {
+                    try {
+                        throw new PunishmentsDatabaseException("Unbanning a player", targetname, this.getName(), e, "/unban", strings);
+                    } catch (PunishmentsDatabaseException pde) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                        errorHandler.log(pde);
+                        errorHandler.alert(pde, commandSender);
                     }
-                    if (plugin.testConnectionManual())
-                        this.execute(commandSender, strings);
                 }
             } else {
                 commandSender.sendMessage(new ComponentBuilder(plugin.prefix).append("That is not a player's name!").color(ChatColor.RED).create());

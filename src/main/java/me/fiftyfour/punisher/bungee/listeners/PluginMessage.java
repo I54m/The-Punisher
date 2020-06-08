@@ -1,15 +1,15 @@
 package me.fiftyfour.punisher.bungee.listeners;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
+import me.fiftyfour.punisher.bungee.managers.ReputationManager;
+import me.fiftyfour.punisher.bungee.managers.WorkerManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
-import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
+import me.fiftyfour.punisher.universal.exceptions.PunishmentCalculationException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentIssueException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.Connection;
@@ -25,10 +25,12 @@ import java.util.logging.Level;
 
 public class PluginMessage implements Listener {
 
+    private final PunishmentManager punishmngr = PunishmentManager.getINSTANCE();
+    private final WorkerManager workerManager = WorkerManager.getINSTANCE();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+
+    private boolean allowGui = true;
     static ArrayList<ServerInfo> chatOffServers = new ArrayList<>();
-    private PunishmentManager punishmngr = PunishmentManager.getInstance();
-    private int sqlfails = 0;
-    private BungeeMain plugin = BungeeMain.getInstance();
 
     @EventHandler
     public void onPluginMessage(PluginMessageEvent e) {
@@ -36,31 +38,31 @@ public class PluginMessage implements Listener {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(e.getData()));
             try {
                 Connection sender = e.getReceiver();
-                String chatState, action, uuid, name, reasonString;
+                String chatState, action, uuid, name;
                 action = in.readUTF();
                 switch (action) {
                     case "chatToggled": {
                         chatState = in.readUTF();
-                        ProxiedPlayer toggeler = ProxyServer.getInstance().getPlayer(e.getReceiver().toString());
+                        ProxiedPlayer toggler = (ProxiedPlayer) sender;
                         if (chatState.equalsIgnoreCase("on")) {
-                            StaffChat.sendMessage(toggeler.getName() + " Has toggled chat: On!");
-                            ServerInfo server = toggeler.getServer().getInfo();
+                            StaffChat.sendMessage(toggler.getName() + " Has toggled chat: On!", true);
+                            ServerInfo server = toggler.getServer().getInfo();
                             chatOffServers.remove(server);
                         } else {
-                            StaffChat.sendMessage(toggeler.getName() + " Has toggled chat: Off!");
-                            ServerInfo server = toggeler.getServer().getInfo();
+                            StaffChat.sendMessage(toggler.getName() + " Has toggled chat: Off!", true);
+                            ServerInfo server = toggler.getServer().getInfo();
                             chatOffServers.add(server);
                         }
                         return;
                     }
                     case "getrep": {
                         uuid = in.readUTF();
-                        String rep = ReputationSystem.getRep(uuid);
+                        String rep = ReputationManager.getRep(uuid);
                         if (rep == null) {
                             rep = "5.0";
                         }
                         name = in.readUTF();
-                        ProxiedPlayer player = (ProxiedPlayer) e.getReceiver();
+                        ProxiedPlayer player = (ProxiedPlayer) sender;
                         ByteArrayOutputStream bytestream = new ByteArrayOutputStream();
                         DataOutputStream out = new DataOutputStream(bytestream);
                         out.writeUTF("rep");
@@ -71,49 +73,76 @@ public class PluginMessage implements Listener {
                         return;
                     }
                     case "punish": {
-                        name = in.readUTF();
-                        uuid = in.readUTF().replace("-", "");
-                        reasonString = in.readUTF();
-                        Punishment punishment = null;
                         ProxiedPlayer punisher = (ProxiedPlayer) sender;
+                        if (!allowGui) {
+                            punisher.sendMessage(new ComponentBuilder(plugin.prefix).append("The Punisher Gui is currently not functioning correctly please inform an admin+ asap!!").color(ChatColor.RED).create());
+                            return;
+                        }
+                        uuid = in.readUTF().replace("-", "");
+                        name = in.readUTF();
+                        int slot = Integer.parseInt(in.readUTF());
+                        String item = in.readUTF();
                         try {
-                            if (sqlfails < 5) {
-                                Punishment.Type type;
-                                Punishment.Reason reason = Punishment.Reason.valueOf(reasonString);
-                                String message;
-                                if (reasonString.contains("Manual")) {
-                                    String typeString = in.readUTF();
-                                    type = Punishment.Type.valueOf(typeString);
-                                    message = in.readUTF();
-                                } else if (reasonString.contains("Other")) {
-                                    type = Punishment.Type.BAN;
-                                    message = in.readUTF();
-                                } else {
-                                    type = punishmngr.calculateType(uuid, reason);
-                                    message = in.readUTF();
+                            String[] properties = punishmngr.translate(slot, item);
+                            Punishment.Type type;
+                            Punishment.Reason reason;
+                            String message;
+                            long expiration = 0;
+                            if (properties[0].equals("Custom")) {
+                                reason = Punishment.Reason.Custom;
+                                type = Punishment.Type.valueOf(properties[1]);
+                                message = properties[2];
+                                expiration = Long.parseLong(properties[3]);
+                            } else if (properties[0].contains("Other")) {
+                                reason = Punishment.Reason.valueOf(properties[0]);
+                                type = Punishment.Type.BAN;
+                                message = properties[1];
+                            } else {
+                                reason = Punishment.Reason.valueOf(properties[0]);
+                                type = punishmngr.calculateType(uuid, reason);
+                                message = properties[1];
+                            }
+                            final Punishment punishment = new Punishment(type, reason, expiration > 0 ? expiration : null, uuid, name, punisher.getUniqueId().toString().replace("-", ""), message);
+                            workerManager.runWorker(new WorkerManager.Worker(() -> {
+                                try {
+                                    punishmngr.issue(punishment, punisher, true, true, true);
+                                } catch (SQLException sqle) {
+                                    try {
+                                        throw new PunishmentIssueException("Automatic punishment was unable to issue due to an sql exception", punishment, sqle);
+                                    } catch (PunishmentIssueException pie) {
+                                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                                        errorHandler.log(pie);
+                                        errorHandler.alert(pie, punisher);
+                                    }
+                                    allowGui = false;
                                 }
-                                punishment = new Punishment(reason, message, null, type, uuid, punisher.getUniqueId().toString().replace("-", ""));
-                                punishmngr.issue(punishment, punisher, name, true, true, true);
-                                punisher.sendMessage(new ComponentBuilder(plugin.prefix).append("Punishing " + NameFetcher.getName(uuid) + " for: " + message).color(ChatColor.GREEN).create());
-                            } else
-                                punisher.sendMessage(new ComponentBuilder(plugin.prefix).append("The Punisher Gui is currently not functioning correctly please inform an admin+ asap!!").color(ChatColor.RED).create());
+                            }));
+                            punisher.sendMessage(new ComponentBuilder(plugin.prefix).append("Punishing " + name + " for: " + message + "...").color(ChatColor.GREEN).create());
                         } catch (SQLException sqle) {
                             try {
-                                throw new PunishmentIssueException("Automatic punishment was unable to issue due to an sql exception", punishment, sqle);
-                            } catch (PunishmentIssueException pie) {
-                                ErrorHandler errorHandler = ErrorHandler.getInstance();
-                                errorHandler.log(pie);
-                                errorHandler.alert(pie, punisher);
+                                throw new PunishmentCalculationException("Automatic punishment was unable to issue due to an sql exception", "Initialize required feilds for punishment", sqle);
+                            } catch (PunishmentCalculationException pce) {
+                                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                                errorHandler.log(pce);
+                                errorHandler.alert(pce, punisher);
                             }
-                            sqlfails++;
-                            if (plugin.testConnectionManual()) {
-                                this.onPluginMessage(new PluginMessageEvent(e.getSender(), e.getReceiver(), e.getTag(), e.getData()));
-                            }
+                            allowGui = false;
+                        } catch (PunishmentCalculationException pce) {
+                            ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                            errorHandler.log(pce);
+                            errorHandler.alert(pce, punisher);
                         }
                     }
                 }
             } catch (IOException IO) {
-                IO.printStackTrace();
+                try {
+                    throw new PunishmentCalculationException("Automatic punishment was unable to issue due to an IO exception, (the end of the plugin message was reached unexpectedly)", "Punishment from gui plugin message", IO);
+                } catch (PunishmentCalculationException pce) {
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                    errorHandler.log(pce);
+                    errorHandler.alert(pce, (ProxiedPlayer) e.getReceiver());
+                }
+                allowGui = false;
             }
         } else if (e.getTag().equals("punisher:minor")) {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(e.getData()));
@@ -122,7 +151,7 @@ public class PluginMessage implements Listener {
                 action = in.readUTF();
                 if (action.equals("getrepcache")) {
                     uuid = in.readUTF();
-                    String rep = ReputationSystem.getRep(uuid);
+                    String rep = ReputationManager.getRep(uuid);
                     if (rep == null) {
                         rep = "5.0";
                     }
@@ -135,7 +164,7 @@ public class PluginMessage implements Listener {
                     player.getServer().sendData("punisher:minor", bytestream.toByteArray());
                 } else if (action.equals("log")) {
                     Level level = Level.parse(in.readUTF());
-                    BungeeMain.Logs.log(level, in.readUTF());
+                    PunisherPlugin.LOGS.log(level, in.readUTF());
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();

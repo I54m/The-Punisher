@@ -1,64 +1,44 @@
 package me.fiftyfour.punisher.bungee.fetchers;
 
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
+import me.fiftyfour.punisher.bungee.objects.Punishment;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
 
 import java.util.concurrent.Callable;
 
-public class Status implements Callable<TextComponent> {
+public class Status implements Callable<BaseComponent[]> {
 
     private String targetuuid;
-    private PunishmentManager punishMnger = PunishmentManager.getInstance();
+    private final PunishmentManager punishMnger = PunishmentManager.getINSTANCE();
 
     public void setTargetuuid(String targetuuid) {
         this.targetuuid = targetuuid;
     }
 
     @Override
-    public TextComponent call() {
-        TextComponent status;
-        if (punishMnger.isBanned(targetuuid)) {
-            long bantime = punishMnger.getBan(targetuuid).getDuration();
-            long banleftmillis = bantime - System.currentTimeMillis();
-            int daysleft = (int) (banleftmillis / (1000 * 60 * 60 * 24));
-            int hoursleft = (int) (banleftmillis / (1000 * 60 * 60) % 24);
-            int minutesleft = (int) (banleftmillis / (1000 * 60) % 60);
-            int secondsleft = (int) (banleftmillis / 1000 % 60);
-            String reason = punishMnger.getBan(targetuuid).getMessage();
-            if (reason == null)
-                reason = punishMnger.getBan(targetuuid).getReason().toString().replace("_", " ");
-            String punisher = NameFetcher.getName(punishMnger.getBan(targetuuid).getPunisherUUID());
-            if (secondsleft <= 0){
-                status = new TextComponent("No currently active punishments!");
-                status.setColor(ChatColor.GREEN);
-            }else {
-                status = new TextComponent("Banned for " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s. Reason: " + reason + " by: " + punisher);
-                status.setColor(ChatColor.RED);
+    public BaseComponent[] call() {
+        ComponentBuilder status = new ComponentBuilder("Current Status: ").color(ChatColor.GREEN);
+        if (punishMnger.hasActivePunishment(targetuuid)) {
+            if (punishMnger.isMuted(targetuuid)) {
+                Punishment punishment = punishMnger.getMute(targetuuid);
+                String timeLeft = punishMnger.getTimeLeft(punishment);
+                String reasonMessage = punishment.getMessage() == null ? punishment.getReason().toString().replace("_", " ") : punishment.getMessage();
+                String punisher = punishment.getPunisherUUID().equals("CONSOLE") ? punishment.getPunisherUUID() : NameFetcher.getName(punishment.getPunisherUUID());
+                status.append("Muted for " + timeLeft + ". Reason: " + reasonMessage + " by: " + punisher).color(ChatColor.YELLOW).event(punishment.getHoverEvent());
             }
-        } else if (punishMnger.isMuted(targetuuid)) {
-            long mutetime = punishMnger.getMute(targetuuid).getDuration();
-            long muteleftmillis = mutetime - System.currentTimeMillis();
-            int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
-            int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
-            int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
-            int secondsleft = (int) (muteleftmillis / 1000 % 60);
-            String reason = punishMnger.getMute(targetuuid).getMessage();
-            if (reason == null)
-                reason = punishMnger.getMute(targetuuid).getReason().toString().replace("_", " ");
-            String punisher = NameFetcher.getName(punishMnger.getMute(targetuuid).getPunisherUUID());
-            if (secondsleft <= 0){
-                status = new TextComponent("No currently active punishments!");
-                status.setColor(ChatColor.GREEN);
-            }else {
-                status = new TextComponent("Muted for " + daysleft + "d " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s. Reason: " + reason + " by: " + punisher);
-                status.setColor(ChatColor.RED);
+            if (punishMnger.isBanned(targetuuid)) {
+                if (punishMnger.isMuted(targetuuid))
+                    status.append(" & ").color(ChatColor.WHITE);
+                Punishment punishment = punishMnger.getBan(targetuuid);
+                String timeLeft = punishMnger.getTimeLeft(punishment);
+                String reasonMessage = punishment.getMessage() == null ? punishment.getReason().toString().replace("_", " ") : punishment.getMessage();
+                String punisher = punishment.getPunisherUUID().equals("CONSOLE") ? punishment.getPunisherUUID() : NameFetcher.getName(punishment.getPunisherUUID());
+                status.append("Banned for " + timeLeft + ". Reason: " + reasonMessage + " by: " + punisher).color(ChatColor.RED).event(punishment.getHoverEvent());
             }
-        } else {
-            status = new TextComponent("No currently active punishments!");
-            status.setColor(ChatColor.GREEN);
-        }
-        return status;
+        } else status.append("No currently active punishments!").color(ChatColor.GREEN);
+        return status.create();
     }
 }

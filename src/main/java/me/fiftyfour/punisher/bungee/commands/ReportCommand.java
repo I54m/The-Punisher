@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.chats.AdminChat;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import net.md_5.bungee.api.ChatColor;
@@ -16,7 +16,7 @@ import java.util.HashMap;
 public class ReportCommand extends Command {
 
     private HashMap<String, Long> cooldowns = new HashMap<String, Long>();
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     public ReportCommand() {
         super("report", "punisher.report");
@@ -58,7 +58,7 @@ public class ReportCommand extends Command {
                 for (int i = 1; i < strings.length; i++) {
                     reason.append(strings[i]).append(" ");
                 }
-                AdminChat.sendMessage(player.getName() + " has Reported: " + target.getName() + " for: " + reason);
+                AdminChat.sendMessage(player.getName() + " has Reported: " + target.getName() + " for: " + reason, true);
                 cooldowns.put(player.getName(), System.currentTimeMillis());
             } else {
                 if (!(player.hasPermission("punisher.report.bypass"))) {
@@ -77,7 +77,7 @@ public class ReportCommand extends Command {
                 for (int i = 1; i < strings.length; i++) {
                     reason.append(strings[i]).append(" ");
                 }
-                StaffChat.sendMessage(player.getName() + " has Reported: " + target.getName() + " for: " + reason);
+                StaffChat.sendMessage(player.getName() + " has Reported: " + target.getName() + " for: " + reason, true);
                 cooldowns.put(player.getName(), System.currentTimeMillis());
             }
         }

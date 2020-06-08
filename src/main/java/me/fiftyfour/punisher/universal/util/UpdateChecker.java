@@ -1,7 +1,7 @@
-package me.fiftyfour.punisher.universal.systems;
+package me.fiftyfour.punisher.universal.util;
 
-import me.fiftyfour.punisher.bukkit.BukkitMain;
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bukkit.PunisherBukkit;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class UpdateChecker {
             return false;
         try {
             Class.forName("net.md_5.bungee.BungeeCord");
-            BungeeMain plugin = BungeeMain.getInstance();
+            PunisherPlugin plugin = PunisherPlugin.getInstance();
             if (!getCurrentVersion().equals(plugin.getDescription().getVersion())) {
                 String[] thisParts = plugin.getDescription().getVersion().split("\\.");
                 String[] thatParts = getCurrentVersion().split("\\.");
@@ -47,7 +47,7 @@ public class UpdateChecker {
                 return false;
             }else return false;
         }catch (ClassNotFoundException CNFE){
-            BukkitMain plugin = BukkitMain.getInstance();
+            PunisherBukkit plugin = PunisherBukkit.getInstance();
             if (!getCurrentVersion().equals(plugin.getDescription().getVersion())) {
                 String[] thisParts = plugin.getDescription().getVersion().split("\\.");
                 String[] thatParts = getCurrentVersion().split("\\.");

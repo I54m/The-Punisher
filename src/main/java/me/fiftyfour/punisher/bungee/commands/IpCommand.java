@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -13,7 +13,7 @@ public class IpCommand extends Command {
         super("ip", "punisher.alts.ip", "address");
     }
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {

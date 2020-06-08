@@ -19,11 +19,7 @@ public class PunishmentCalculationException extends Exception {
 
     @Override
     public String getMessage() {
-        if (cause != null)
-            return "Unable to calculate " + stage + " for automatic punishment because: " + reasonForFailure + ". This Error was caused by " + cause +
-                    ". Error message for cause: " + cause.getMessage();
-        else
-            return "Unable to calculate " + stage + " for automatic punishment because: " + reasonForFailure + ". Cause was unknown.";
-
+        return cause != null ? "Unable to calculate " + stage + " for automatic punishment because: " + reasonForFailure + ". This Error was caused by " + cause + ", Cause message: " + cause.getMessage() :
+                "Unable to calculate " + stage + " for automatic punishment because: " + reasonForFailure + ". Cause was unknown.";
     }
 }

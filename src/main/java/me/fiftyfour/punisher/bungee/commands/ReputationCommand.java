@@ -1,11 +1,11 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
-import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
-import me.fiftyfour.punisher.bungee.systems.ReputationSystem;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.bungee.managers.ReputationManager;
+import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class ReputationCommand extends Command {
 
     private String uuid;
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     public ReputationCommand() {
         super("reputation", "punisher.reputation", "rep");
@@ -53,12 +53,12 @@ public class ReputationCommand extends Command {
         }
         if (future != null) {
             try {
-                uuid = future.get(10, TimeUnit.SECONDS);
+                uuid = future.get(1, TimeUnit.SECONDS);
             } catch (Exception e) {
                 try {
                     throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                 }catch (DataFecthException dfe){
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                     errorHandler.log(dfe);
                     errorHandler.alert(dfe, commandSender);
                 }
@@ -78,8 +78,8 @@ public class ReputationCommand extends Command {
         if (strings[1].equalsIgnoreCase("add")) {
             try {
                 double amount = Double.parseDouble(strings[2]);
-                ReputationSystem.addRep(name, uuid, amount);
-                String currentRep = ReputationSystem.getRep(uuid);
+                ReputationManager.addRep(name, uuid, amount);
+                String currentRep = ReputationManager.getRep(uuid);
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Added: " + new DecimalFormat("##.##").format(amount) + " to: " + name + "'s reputation").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("New Reputation: " + new DecimalFormat("##.##").format(currentRep)).color(ChatColor.RED).create());
             }catch (NumberFormatException e){
@@ -89,8 +89,8 @@ public class ReputationCommand extends Command {
         } else if (strings[1].equalsIgnoreCase("minus")) {
             try {
                 double amount = Double.parseDouble(strings[2]);
-                ReputationSystem.minusRep(name, uuid, amount);
-                String currentRep = ReputationSystem.getRep(uuid);
+                ReputationManager.minusRep(name, uuid, amount);
+                String currentRep = ReputationManager.getRep(uuid);
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Removed: " + new DecimalFormat("##.##").format(amount) + " from: " + name + "'s reputation").color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("New Reputation: " + new DecimalFormat("##.##").format(currentRep)).color(ChatColor.RED).create());
             }catch (NumberFormatException e){
@@ -100,7 +100,7 @@ public class ReputationCommand extends Command {
         } else if (strings[1].equalsIgnoreCase("set")) {
             try {
                 double amount = Double.parseDouble(strings[2]);
-                ReputationSystem.setRep(name, uuid, amount);
+                ReputationManager.setRep(name, uuid, amount);
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Set: " + name + "'s reputation to: " + new DecimalFormat("##.##").format(amount)).color(ChatColor.RED).create());
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("New Reputation: " + new DecimalFormat("##.##").format(amount)).color(ChatColor.RED).create());
             } catch (NumberFormatException e) {

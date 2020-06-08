@@ -1,15 +1,17 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.fetchers.Status;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.bungee.managers.DatabaseManager;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -24,9 +26,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class AltsCommand extends Command {
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+    private final DatabaseManager dbManager = DatabaseManager.getINSTANCE();
     private String targetuuid;
-    private int sqlfails = 0;
 
     public AltsCommand() {
         super("alts", "punisher.alts", "alt", "altsearch");
@@ -56,12 +58,12 @@ public class AltsCommand extends Command {
                     }
                     if (future != null) {
                         try {
-                            targetuuid = future.get(10, TimeUnit.SECONDS);
+                            targetuuid = future.get(1, TimeUnit.SECONDS);
                         } catch (Exception e) {
                             try {
                                 throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                             } catch (DataFecthException dfe) {
-                                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                                 errorHandler.log(dfe);
                                 errorHandler.alert(dfe, commandSender);
                             }
@@ -80,19 +82,19 @@ public class AltsCommand extends Command {
                     }
                     if (strings[0].equalsIgnoreCase("reset") && player.hasPermission("punisher.alts.reset")) {
                         String sql = "SELECT * FROM `altlist` WHERE UUID='" + targetuuid + "'";
-                        PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                        PreparedStatement stmt = dbManager.connection.prepareStatement(sql);
                         ResultSet results = stmt.executeQuery();
                         if (results.next()) {
                             String sql1 = "DELETE FROM `altlist` WHERE `UUID`='" + targetuuid + "' ;";
-                            PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                            PreparedStatement stmt1 = dbManager.connection.prepareStatement(sql1);
                             stmt1.executeUpdate();
                             stmt1.close();
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append(targetname + "'s stored ip address has been reset!").color(ChatColor.RED).create());
-                            BungeeMain.Logs.info(player.getName() + " reset " + targetname + "'s stored ip address");
+                            PunisherPlugin.LOGS.info(player.getName() + " reset " + targetname + "'s stored ip address");
                             ProxiedPlayer target = ProxyServer.getInstance().getPlayer(targetuuid);
                             if (target != null) {
                                 String sql2 = "INSERT INTO `altlist` (`UUID`, `ip`) VALUES ('" + targetuuid + "', '" + target.getAddress().getHostString() + "');";
-                                PreparedStatement stmt2 = plugin.connection.prepareStatement(sql2);
+                                PreparedStatement stmt2 = dbManager.connection.prepareStatement(sql2);
                                 stmt2.executeUpdate();
                                 stmt2.close();
                             }
@@ -103,19 +105,19 @@ public class AltsCommand extends Command {
                         results.close();
                     } else if (strings[0].equalsIgnoreCase("get")) {
                         ExecutorService executorService1;
-                        Future<TextComponent> futurestatus;
+                        Future<BaseComponent[]> futurestatus;
                         Status statusClass = new Status();
                         statusClass.setTargetuuid(targetuuid);
                         executorService1 = Executors.newSingleThreadExecutor();
                         futurestatus = executorService1.submit(statusClass);
                         StringBuilder altslist = new StringBuilder();
                         String sql = "SELECT * FROM `altlist` WHERE UUID='" + targetuuid + "'";
-                        PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                        PreparedStatement stmt = dbManager.connection.prepareStatement(sql);
                         ResultSet results = stmt.executeQuery();
                         if (results.next()) {
                             String ip = results.getString("ip");
                             String sql1 = "SELECT * FROM `altlist` WHERE ip='" + ip + "'";
-                            PreparedStatement stmt1 = plugin.connection.prepareStatement(sql1);
+                            PreparedStatement stmt1 = dbManager.connection.prepareStatement(sql1);
                             ResultSet results1 = stmt1.executeQuery();
                             while (results1.next()) {
                                 String concacc = NameFetcher.getName(results1.getString("uuid"));
@@ -135,14 +137,14 @@ public class AltsCommand extends Command {
                                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Accounts connected to " + targetname + ": ").color(ChatColor.RED).create());
                             }
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append(altslist.toString()).color(ChatColor.RED).create());
-                            TextComponent status;
+                            BaseComponent[] status;
                             try {
-                                status = futurestatus.get(5, TimeUnit.SECONDS);
+                                status = futurestatus.get(500, TimeUnit.MILLISECONDS);
                             } catch (Exception e) {
                                 try {
                                     throw new DataFecthException("Status was required for alts check", targetname, "Punishment Status", this.getName(), e);
                                 } catch (DataFecthException dfe) {
-                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                                     errorHandler.log(dfe);
                                     errorHandler.alert(dfe, commandSender);
                                 }
@@ -150,8 +152,8 @@ public class AltsCommand extends Command {
                                 return;
                             }
                             executorService1.shutdown();
-                            player.sendMessage(new ComponentBuilder(plugin.prefix).append("Current Status: ").color(ChatColor.RED).append(status).create());
-                            BungeeMain.Logs.info(player.getName() + " looked at " + targetname + "'s connected accounts, at the time of logging they were: " + altslist.toString());
+                            player.sendMessage(status);
+                            PunisherPlugin.LOGS.info(player.getName() + " looked at " + targetname + "'s connected accounts, at the time of logging they were: " + altslist.toString());
                         } else {
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("That player has no connected accounts!").color(ChatColor.RED).create());
                         }
@@ -165,7 +167,7 @@ public class AltsCommand extends Command {
                         String ip = strings[1];
                         StringBuilder altslist = new StringBuilder();
                         String sql = "SELECT * FROM `altlist` WHERE ip='" + ip + "'";
-                        PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                        PreparedStatement stmt = dbManager.connection.prepareStatement(sql);
                         ResultSet results = stmt.executeQuery();
                         while (results.next()) {
                             String concacc = NameFetcher.getName(results.getString("uuid"));
@@ -179,7 +181,7 @@ public class AltsCommand extends Command {
                         }
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Accounts connected to the ip: " + ip + ": ").color(ChatColor.RED).create());
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append(altslist.toString()).color(ChatColor.RED).create());
-                        BungeeMain.Logs.info(player.getName() + " Looked at accounts connected to ip: " + ip + " Accounts connected at time of logging: " + altslist.toString());
+                        PunisherPlugin.LOGS.info(player.getName() + " Looked at accounts connected to ip: " + ip + " Accounts connected at time of logging: " + altslist.toString());
                     } else if (!player.hasPermission("punisher.alts.ip")) {
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("You do not have permission to do that!").color(ChatColor.RED).create());
                     } else {
@@ -190,20 +192,13 @@ public class AltsCommand extends Command {
                 commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe(plugin.prefix + e);
-            sqlfails++;
-            if (sqlfails > 5) {
-                try {
-                    throw new PunishmentsDatabaseException("Alts command (/alts" + strings[0] + strings[1] + ")", targetname, this.getName(), e);
-                } catch (PunishmentsDatabaseException pde) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
-                    errorHandler.log(pde);
-                    errorHandler.alert(pde, commandSender);
-                    return;
-                }
+            try {
+                throw new PunishmentsDatabaseException("Alts command (/alts" + strings[0] + strings[1] + ")", targetname, this.getName(), e);
+            } catch (PunishmentsDatabaseException pde) {
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                errorHandler.log(pde);
+                errorHandler.alert(pde, commandSender);
             }
-            if (plugin.testConnectionManual())
-                this.execute(commandSender, strings);
         }
     }
 }

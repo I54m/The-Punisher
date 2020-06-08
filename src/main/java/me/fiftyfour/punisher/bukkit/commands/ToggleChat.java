@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bukkit.commands;
 
-import me.fiftyfour.punisher.bukkit.BukkitMain;
+import me.fiftyfour.punisher.bukkit.PunisherBukkit;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,7 +14,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class ToggleChat implements CommandExecutor {
-    private BukkitMain plugin = BukkitMain.getInstance();
+    private PunisherBukkit plugin = PunisherBukkit.getInstance();
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
 
     private static void sendPluginMessage(@NotNull Player player, String channel, @NotNull String... messages) {
@@ -24,7 +24,7 @@ public class ToggleChat implements CommandExecutor {
             for (String msg : messages){
                 out.writeUTF(msg);
             }
-            player.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), channel, outbytes.toByteArray());
+            player.sendPluginMessage(PunisherBukkit.getPlugin(PunisherBukkit.class), channel, outbytes.toByteArray());
             out.close();
             outbytes.close();
         }catch (IOException ioe){

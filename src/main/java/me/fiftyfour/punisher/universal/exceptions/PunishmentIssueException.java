@@ -22,11 +22,8 @@ public class PunishmentIssueException extends Exception {
 
     @Override
     public String getMessage() {
-        if (cause != null)
-            return "Punishment: " + punishment.toString() + " Was unable to be Issued because: " + reasonForFailure + ". This Error was caused by " + cause +
-                ". Error message for cause: " + cause.getMessage();
-        else
-            return "Punishment: " + punishment.toString() + " Was unable to be Issued because: " + reasonForFailure + ". Cause was unknown.";
-
+        return cause != null ?
+                "Punishment: " + punishment.toString() + " Was unable to be Issued because: " + reasonForFailure + ". This Error was caused by " + cause
+                : "Punishment: " + punishment.toString() + " Was unable to be Issued because: " + reasonForFailure + ". Cause was unknown.";
     }
 }

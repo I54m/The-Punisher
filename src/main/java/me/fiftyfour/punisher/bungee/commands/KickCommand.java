@@ -1,10 +1,10 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
-import me.fiftyfour.punisher.universal.systems.Permissions;
+import me.fiftyfour.punisher.universal.util.Permissions;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -15,7 +15,7 @@ import net.md_5.bungee.api.plugin.Command;
 
 public class KickCommand extends Command {
 
-    private static BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
     public KickCommand() {
         super("kick", "punisher.kick");
     }
@@ -34,7 +34,7 @@ public class KickCommand extends Command {
                 return;
             }
             try {
-                if (!Permissions.higher(player, target.getUniqueId().toString().replace("-", ""), target.getName())) {
+                if (!Permissions.higher(player, target.getUniqueId().toString().replace("-", ""))) {
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
                     return;
                 }
@@ -42,7 +42,7 @@ public class KickCommand extends Command {
                 try {
                     throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
                 } catch (DataFecthException dfe) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                     errorHandler.log(dfe);
                     errorHandler.alert(e, player);
                     return;
@@ -51,14 +51,14 @@ public class KickCommand extends Command {
             StringBuilder sb = new StringBuilder();
             if (strings.length == 1) {
                 target.disconnect(new TextComponent(ChatColor.RED + "You have been Kicked from the server!\nYou were kicked for the reason: Manually Kicked!\nYou may reconnect at anytime, but make sure to read the /rules!"));
-                StaffChat.sendMessage(player.getName() + " Kicked: " + target.getName() + " for: Manually Kicked");
+                StaffChat.sendMessage(player.getName() + " Kicked: " + target.getName() + " for: Manually Kicked", true);
             } else {
                 for (int i = 1; i < strings.length; i++)
                     sb.append(strings[i]).append(" ");
-                StaffChat.sendMessage(player.getName() + " Kicked: " + target.getName() + " for: " + sb.toString());
+                StaffChat.sendMessage(player.getName() + " Kicked: " + target.getName() + " for: " + sb.toString(), true);
                 target.disconnect(new TextComponent(ChatColor.translateAlternateColorCodes('&', sb.toString())));
             }
-            BungeeMain.Logs.info(target.getName() + " was kicked by: " + player.getName() + " for: " + sb.toString());
+            PunisherPlugin.LOGS.info(target.getName() + " was kicked by: " + player.getName() + " for: " + sb.toString());
         } else {
             commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
         }

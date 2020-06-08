@@ -1,14 +1,13 @@
 package me.fiftyfour.punisher.bungee.discordbot.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.discordbot.DiscordMain;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.User;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -17,8 +16,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +28,7 @@ public class DiscordCommand extends Command {
         super("discord", "punisher.discord", "disc");
     }
 
-    private static BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
     private String targetuuid;
 
     @Override
@@ -79,19 +76,19 @@ public class DiscordCommand extends Command {
                         }
                         return;
                     case "unlink":
-                        if (DiscordMain.verifiedUsers.containsKey(player.getUniqueId())){
+                        if (DiscordMain.verifiedUsers.containsKey(player.getUniqueId())) {
                             User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(player.getUniqueId()));
                             DiscordMain.verifiedUsers.remove(player.getUniqueId());
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unlinked from discord user: " + user.getName() + "#" + user.getDiscriminator()).color(ChatColor.RED).create());
-                            Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
-                            List<Role> rolesToRemove = new ArrayList<>();
-                            for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")){
-                                rolesToRemove.add(guild.getRoleById(roleids));
+                            Guild guild = DiscordMain.jda.getGuildById(PunisherPlugin.config.getString("DiscordIntegration.GuildId"));
+                            for (String roleids : PunisherPlugin.config.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
+                                if (guild.getRoleById(roleids) != null)
+                                    guild.removeRoleFromMember(guild.getMember(user), guild.getRoleById(roleids)).queue();
                             }
-                            for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")){
-                                rolesToRemove.add(guild.getRoleById(roleids));
+                            for (String roleids : PunisherPlugin.config.getStringList("DiscordIntegration.RolesToSync")) {
+                                if (guild.getRoleById(roleids) != null)
+                                    guild.removeRoleFromMember(guild.getMember(user), guild.getRoleById(roleids)).queue();
                             }
-                            guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
                         }else{
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("You are not Linked to a discord user!").color(ChatColor.RED).create());
                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("To link a discord user do \"/discord link\"").color(ChatColor.GREEN).create());
@@ -112,12 +109,12 @@ public class DiscordCommand extends Command {
                             }
                             if (future != null) {
                                 try {
-                                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                                    targetuuid = future.get(1, TimeUnit.SECONDS);
                                 } catch (Exception e) {
                                     try {
                                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                                     } catch (DataFecthException dfe) {
-                                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                                         errorHandler.log(dfe);
                                         errorHandler.alert(dfe, commandSender);
                                     }
@@ -158,14 +155,14 @@ public class DiscordCommand extends Command {
                                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Booting Discord bot...").color(ChatColor.GREEN).create());
                                         DiscordMain.startBot();
                                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully rebooted Discord bot!").color(ChatColor.GREEN).create());
-                                        BungeeMain.Logs.warning(player.getName() + " Rebooted Discord Bot! (through /discord admin reboot)");
+                                        PunisherPlugin.LOGS.warning(player.getName() + " Rebooted Discord Bot! (through /discord admin reboot)");
                                         return;
                                     case "disable":
                                         if (DiscordMain.jda != null) {
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Shutting down Discord bot...").color(ChatColor.GREEN).create());
                                             DiscordMain.shutdown();
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Shutting down complete!").color(ChatColor.GREEN).create());
-                                            BungeeMain.Logs.warning(player.getName() + " Disabled/Shutdown Discord Bot! (through /discord admin disable)");
+                                            PunisherPlugin.LOGS.warning(player.getName() + " Disabled/Shutdown Discord Bot! (through /discord admin disable)");
                                         }else{
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord bot is already offline, boot it up with /discord enable").color(ChatColor.RED).create());
                                         }
@@ -175,7 +172,7 @@ public class DiscordCommand extends Command {
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Booting Discord bot...").color(ChatColor.GREEN).create());
                                             DiscordMain.startBot();
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully booted Discord bot!").color(ChatColor.GREEN).create());
-                                            BungeeMain.Logs.warning(player.getName() + " Enabled/Booted the Discord Bot! (through /discord admin enable)");
+                                            PunisherPlugin.LOGS.warning(player.getName() + " Enabled/Booted the Discord Bot! (through /discord admin enable)");
                                         }else{
                                             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Discord bot is already online, shut it down with /discord disable").color(ChatColor.RED).create());
                                         }
@@ -198,12 +195,12 @@ public class DiscordCommand extends Command {
                                         }
                                         if (future != null) {
                                             try {
-                                                targetuuid = future.get(10, TimeUnit.SECONDS);
+                                                targetuuid = future.get(1, TimeUnit.SECONDS);
                                             } catch (Exception e) {
                                                 try {
                                                     throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
                                                 } catch (DataFecthException dfe) {
-                                                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                                                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                                                     errorHandler.log(dfe);
                                                     errorHandler.alert(dfe, commandSender);
                                                 }
@@ -220,15 +217,15 @@ public class DiscordCommand extends Command {
                                                 User user = DiscordMain.jda.getUserById(DiscordMain.verifiedUsers.get(UUIDFetcher.formatUUID(targetuuid)));
                                                 DiscordMain.verifiedUsers.remove(player.getUniqueId());
                                                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("Successfully unlinked " + targetName + "  from discord user: " + user.getName() + "#" + user.getDiscriminator()).color(ChatColor.RED).create());
-                                                Guild guild = DiscordMain.jda.getGuildById(BungeeMain.PunisherConfig.getString("DiscordIntegration.GuildId"));
-                                                List<Role> rolesToRemove = new ArrayList<>();
-                                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
-                                                    rolesToRemove.add(guild.getRoleById(roleids));
+                                                Guild guild = DiscordMain.jda.getGuildById(PunisherPlugin.config.getString("DiscordIntegration.GuildId"));
+                                                for (String roleids : PunisherPlugin.config.getStringList("DiscordIntegration.RolesIdsToAddToLinkedUser")) {
+                                                    if (guild.getRoleById(roleids) != null)
+                                                        guild.removeRoleFromMember(guild.getMember(user), guild.getRoleById(roleids)).queue();
                                                 }
-                                                for (String roleids : BungeeMain.PunisherConfig.getStringList("DiscordIntegration.RolesToSync")) {
-                                                    rolesToRemove.add(guild.getRoleById(roleids));
+                                                for (String roleids : PunisherPlugin.config.getStringList("DiscordIntegration.RolesToSync")) {
+                                                    if (guild.getRoleById(roleids) != null)
+                                                        guild.removeRoleFromMember(guild.getMember(user), guild.getRoleById(roleids)).queue();
                                                 }
-                                                guild.getController().removeRolesFromMember(guild.getMember(user), rolesToRemove).queue();
                                             } else {
                                                 player.sendMessage(new ComponentBuilder(plugin.prefix).append(targetName + " is not yet Linked to a discord user!").color(ChatColor.RED).create());
                                             }

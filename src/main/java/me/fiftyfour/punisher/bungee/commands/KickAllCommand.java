@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
@@ -15,32 +15,32 @@ public class KickAllCommand extends Command {
         super("kickall", "punisher.kick.all");
     }
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
-        if (ProxyServer.getInstance().getPlayers().toArray().length <= 1){
+        if (ProxyServer.getInstance().getPlayers().size() == 0) {
             commandSender.sendMessage(new TextComponent(ChatColor.RED + "No players online to kick!"));
             return;
         }
-        if (commandSender instanceof ProxiedPlayer){
+        if (commandSender instanceof ProxiedPlayer) {
             ProxiedPlayer player = (ProxiedPlayer) commandSender;
-            if (strings.length >= 1){
-                if (strings[0].equalsIgnoreCase("-network")){
+            if (strings.length >= 1) {
+                if (strings[0].equalsIgnoreCase("-network")) {
                     for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
                         if (!player.equals(all)) {
                             all.disconnect(new TextComponent(ChatColor.RED + "You have been Kicked from the server!\nYou were kicked for the reason: Manually Kicked!\nYou may reconnect at anytime, but make sure to read the /rules!"));
-                            StaffChat.sendMessage(player.getName() + " Kicked: " + all.getName() + " for: Manually Kicked");
+                            StaffChat.sendMessage(player.getName() + " Kicked: " + all.getName() + " for: Manually Kicked", true);
                         }
                     }
-                }else{
+                } else {
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("You cannot supply a message for a kick all, use -network to kick all players network-wide.").color(ChatColor.RED).create());
                 }
-            }else {
+            } else {
                 for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
                     if (!player.equals(all)  && player.getServer().getInfo().getName().equals(all.getServer().getInfo().getName())) {
                         all.disconnect(new TextComponent(ChatColor.RED + "You have been Kicked from the server!\nYou were kicked for the reason: Manually Kicked!\nYou may reconnect at anytime, but make sure to read the /rules!"));
-                        StaffChat.sendMessage(player.getName() + " Kicked: " + all.getName() + " for: Manually Kicked");
+                        StaffChat.sendMessage(player.getName() + " Kicked: " + all.getName() + " for: Manually Kicked", true);
                     }
                 }
             }

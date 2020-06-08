@@ -7,7 +7,7 @@
     <groupId>me.fiftyfour.punisher</groupId>
     <artifactId>The-Punisher</artifactId>
     <name>The-Punisher</name>
-    <version>1.9</version>
+    <version>1.10-DEV-BUILD</version>
     <properties>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>dd-MM-yy HH:mm:ss</maven.build.timestamp.format>
@@ -40,6 +40,12 @@
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
 
+        <repository>
+            <id>jcenter</id>
+            <name>jcenter-bintray</name>
+            <url>https://jcenter.bintray.com</url>
+        </repository>
+
     </repositories>
 
     <dependencies>
@@ -60,21 +66,65 @@
         <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
-            <version>1.13-SNAPSHOT</version>
+            <version>1.15-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.trove4j</groupId>
+                    <artifactId>core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.13.2-R0.1-SNAPSHOT</version>
+            <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.googlecode.json-simple</groupId>
+                    <artifactId>json-simple</artifactId>
+                </exclusion>
+                <!--                <exclusion>-->
+                <!--                    <groupId>com.google.code.gson</groupId>-->
+                <!--                    <artifactId>gson</artifactId>-->
+                <!--                </exclusion>-->
+                <exclusion>
+                    <groupId>net.md-5</groupId>
+                    <artifactId>bungeecord-chat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>me.lucko.luckperms</groupId>
-            <artifactId>luckperms-api</artifactId>
-            <version>4.3</version>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -86,6 +136,10 @@
                 <exclusion>
                     <groupId>org.spigotmc</groupId>
                     <artifactId>spigot</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>be.maximvdw</groupId>
+                    <artifactId>MVdWUpdater</artifactId>
                 </exclusion>
             </exclusions>
             <scope>provided</scope>
@@ -114,10 +168,38 @@
 
         <dependency>
             <groupId>net.dv8tion</groupId>
-            <artifactId>alonsojda</artifactId>
-            <version>1.0-ALPHA</version>
-            <scope>system</scope>
-            <systemPath>D:/Development/Test server/BuildTools/AlonsoJDA.jar</systemPath>
+            <artifactId>JDA</artifactId>
+            <version>4.1.1_110</version>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>club.minnced</groupId>
+                    <artifactId>opus-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains</groupId>
+                    <artifactId>annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--        <dependency>-->
+        <!--            <groupId>net.dv8tion</groupId>-->
+        <!--            <artifactId>alonsojda</artifactId>-->
+        <!--            <version>1.0-ALPHA</version>-->
+        <!--            <scope>system</scope>-->
+        <!--            <systemPath>F:/Dependencies/AlonsoJDA.jar</systemPath>-->
+        <!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.12</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>
@@ -144,6 +226,11 @@
                         <relocation>
                             <pattern>org.jetbrains</pattern>
                             <shadedPattern>me.fiftyfour.punisher.internal.jetbrains</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>net.dv8tion.jda</pattern>
+                            <shadedPattern>me.fiftyfour.punisher.internal.jda</shadedPattern>
+                            <!--                            if having issues with the jda it might be this shading as compiler says is breaks it's strong encapsulation to do this -->
                         </relocation>
                     </relocations>
                 </configuration>

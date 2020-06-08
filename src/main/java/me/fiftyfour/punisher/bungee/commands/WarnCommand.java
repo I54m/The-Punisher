@@ -1,12 +1,12 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.systems.Permissions;
+import me.fiftyfour.punisher.universal.util.Permissions;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -18,9 +18,8 @@ import net.md_5.bungee.api.plugin.Command;
 import java.sql.SQLException;
 
 public class WarnCommand extends Command {
-    private BungeeMain plugin = BungeeMain.getInstance();
-    private int sqlfails = 0;
-    private PunishmentManager punishMnger = PunishmentManager.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+    private final PunishmentManager punishMnger = PunishmentManager.getINSTANCE();
 
     public WarnCommand() {
         super("warn", "punisher.warn");
@@ -51,38 +50,31 @@ public class WarnCommand extends Command {
                 sb.append(strings[i]).append(" ");
         }
         try {
-            if (!Permissions.higher(player, targetuuid, target.getName())) {
+            if (!Permissions.higher(player, targetuuid)) {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
                 return;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             try {
                 throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
             } catch (DataFecthException dfe) {
-                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                 errorHandler.log(dfe);
                 errorHandler.alert(e, player);
                 return;
             }
         }
         try {
-            Punishment warn = new Punishment(Punishment.Reason.Manual, sb.toString(), null, Punishment.Type.WARN, targetuuid, player.getUniqueId().toString().replace("-", ""));
-            punishMnger.issue(warn, player, target.getName(), true, true, true);
-        }catch (SQLException e){
-            plugin.getLogger().severe(plugin.prefix + e);
-            sqlfails++;
-            if(sqlfails > 5){
-                try {
-                    throw new PunishmentsDatabaseException("Issuing warn on a player", target.getName(), this.getName(), e, "/warn", strings);
-                } catch (PunishmentsDatabaseException pde) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
-                    errorHandler.log(pde);
-                    errorHandler.alert(pde, commandSender);
-                    return;
-                }
+            Punishment warn = new Punishment(Punishment.Type.WARN, Punishment.Reason.Custom, null, targetuuid, target.getName(), player.getUniqueId().toString().replace("-", ""), sb.toString());
+            punishMnger.issue(warn, player, true, true, true);
+        } catch (SQLException e) {
+            try {
+                throw new PunishmentsDatabaseException("Issuing warn on a player", target.getName(), this.getName(), e, "/warn", strings);
+            } catch (PunishmentsDatabaseException pde) {
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                errorHandler.log(pde);
+                errorHandler.alert(pde, commandSender);
             }
-            if (plugin.testConnectionManual())
-                this.execute(commandSender, strings);
         }
     }
 }

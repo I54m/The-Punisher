@@ -1,5 +1,6 @@
 package me.fiftyfour.punisher.bungee.managers;
 
+import lombok.Getter;
 import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import net.md_5.bungee.api.ChatColor;
 
@@ -7,17 +8,14 @@ import java.util.ArrayList;
 
 public class WorkerManager {
 
+    @Getter
     private static final WorkerManager INSTANCE = new WorkerManager();
-    private ArrayList<Worker> workers = new ArrayList<>();
+    private final ArrayList<Worker> workers = new ArrayList<>();
     private boolean locked = true;
     private Thread mainThread;
     private PunisherPlugin plugin = PunisherPlugin.getInstance();
 
     private WorkerManager() {
-    }
-
-    public static WorkerManager getInstance() {
-        return INSTANCE;
     }
 
     public void start() {
@@ -49,9 +47,10 @@ public class WorkerManager {
         }
         locked = true;
         try {
-            plugin.getLogger().info(plugin.prefix + ChatColor.GREEN + "Pausing main thread while workers finish up!");
-            if (!workers.isEmpty())
+            if (!workers.isEmpty()) {
+                plugin.getLogger().info(plugin.prefix + ChatColor.GREEN + "Pausing main thread while workers finish up!");
                 mainThread.wait();
+            }
         } catch (InterruptedException e) {
             plugin.getLogger().severe(plugin.prefix + ChatColor.RED + "Error: main thread was interrupted while waiting for workers to finish!");
             plugin.getLogger().severe(plugin.prefix + ChatColor.RED + "Interrupting workers, this may cause data loss!!");
@@ -89,7 +88,7 @@ public class WorkerManager {
 
     public static class Worker extends Thread {
 
-        private Runnable runnable;
+        private final Runnable runnable;
         private Status status;
 
         public Worker(Runnable runnable) {
@@ -100,9 +99,15 @@ public class WorkerManager {
         @Override
         public void run() {
             status = Status.WORKING;
-            runnable.run();
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                // TODO: 19/05/2020 error handler thread error
+                status = Status.FINISHED;
+                WorkerManager.getINSTANCE().finishedWorker(this);
+            }
             status = Status.FINISHED;
-            WorkerManager.getInstance().finishedWorker(this);
+            WorkerManager.getINSTANCE().finishedWorker(this);
         }
 
         public WorkerManager.Worker.Status getStatus() {

@@ -1,5 +1,5 @@
-######################################################################################The Punisher DiscordMain config ###########################################################################################################
-Configversion: "${project.version}"
+######################################################################################The Punisher Main config ###########################################################################################################
+Configversion: ${project.version}
 #DO NOT TOUCH THIS IT WILL MAKE A NEW CONFIG!!
 #This config is for the main config options, if you want to edit the automatic punishments go to punishments.yml
 
@@ -16,8 +16,28 @@ MySQL:
   port: 3306
   #Extra arguments to use in the sql url
   extraArguments: ?useSSL=false
-  #should extra debug messages be shown for the sql connection tester?
+  #should extra debug messages be shown for the sql connection?
   debugMode: false
+
+Plugin-prefixes:
+  Plugin-Wide: "&7[&cPunisher&7] "
+  #%server% will be replaced with server that the player is on & %player% with the player's name and prefix in the below options
+  Staff-Chat: "&7[&cSC&7] &7[%server%&7] %player%: "
+  Admin-Chat: "&7[&3AC&7] &7[%server%&7] %player%: "
+  broadcast-prefix: "&7[&e&lShout&7] &7[&b%server%&7] %player%: "
+  superbroadcast-prefix: "&b&lAnnouncement: &r"
+
+#The color of the text in the chats
+Staff-Chat-Color: 'RED'
+Admin-Chat-Color: 'AQUA'
+Broadcast-Color: 'WHITE'
+SuperBroadcast-Color: 'WHITE'
+
+#The time in hours in which a player can do /broadcast can be bypassed with: punisher.cooldowns.override
+broadcast-cooldown: 24
+
+#Set the following in this format: <message>:<fade in>:<stay>:<fade out> or set to 'none' to disable
+superbroadcast-title: "&bAn Announcement has been made!:15:75:15"
 
 #commands and command aliases you want to be blocked when a player is muted
 Muted Commands:
@@ -31,8 +51,6 @@ Muted Commands:
   - "global"
   - "broadcast"
   - "g"
-  - "tc"
-  - "nc"
 
 #The ban messages will be shown when ever someone gets banned or blocked from logging in due to a ban, the kick message is for when they get /kicked or kicked by the plugin
 #placeholders are %reason% for the ban reason, %days% for the days left, %hours% for the hours left, %minutes% for the minutes left, %seconds% for the seconds left.
@@ -74,7 +92,7 @@ Mute Sound:
 
 TempMute Message:
   "\n&cYou have been Muted, reason: &f%reason%!
-  \n&cThis mute expires in: %days%d %hours%h %minutes%m %seconds%s!
+  \n&cThis mute expires in: %timeleft%!
   \n&cYou have done something against our server rules!
   \n&cSome of our punishments result in a mute with no warning!\n"
 
@@ -86,7 +104,7 @@ PermMute Message:
 
 TempMute Deny Message:
   "\n&cYou cannot speak! You are Muted! Reason: &f%reason%!
-  \n&cThis mute expires in: %days%d %hours%h %minutes%m %seconds%s!
+  \n&cThis mute expires in: %timeleft%!
   \n&cYou have done something against our server rules!
   \n&cSome of our punishments result in a mute with no warning!\n"
 
@@ -111,7 +129,7 @@ Kick Message:
 TempBan Message:
   "&cYou have been Banned from the server!
   \n&cYou were Banned for the reason: &f%reason%!
-  \n&cThis ban expires in: %days%d %hours%h %minutes%m %seconds%s!
+  \n&cThis ban expires in: %timeleft%!
   \n&cYou have done something against our server rules!
   \n&cSome of our punishments result in a ban with no warning!"
 
@@ -140,25 +158,13 @@ ReputationScale:
   KICK: 0
   WARN: 0.2
 
-#The time in hours in which a player can do /global
-/global Cooldown: 24
-
-helpCommand:
-  #should there be a custom /help command instead of essentials /help?
-  Enabled: true
-  TextToUse: "\n- Need help? do /warp tutorial to go through the tutorial.
-     \n- Report players using /report <player> <reason> and staff will be notified.
-     \n- Need extra help? join our discord and ask around for help!
-     \n- Link: http://your-discord-join-link.com\n"
-  ColorToUse: "light_purple"
-
 Voting:
   addRepOnVote: true
   amountOfRepToAdd: 0.1
 
 
 DiscordIntegration:
-  Enabled: true
+  Enabled: false
   BotToken: "<insert bot token here>"
   GuildId: "<insert guild Id here>"
   Playing: "your.server.com"

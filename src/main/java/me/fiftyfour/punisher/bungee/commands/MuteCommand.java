@@ -1,14 +1,14 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
 import me.fiftyfour.punisher.bungee.objects.Punishment;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
-import me.fiftyfour.punisher.universal.systems.Permissions;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.Permissions;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -25,12 +25,11 @@ import java.util.concurrent.TimeUnit;
 
 public class MuteCommand extends Command {
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
     private long length;
     private String targetuuid;
     private String targetname;
-    private int sqlfails = 0;
-    private PunishmentManager punishMnger = PunishmentManager.getInstance();
+    private final PunishmentManager punishMnger = PunishmentManager.getINSTANCE();
 
     public MuteCommand() {
         super("mute", "punisher.mute", "tempmute");
@@ -47,74 +46,76 @@ public class MuteCommand extends Command {
             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Mute a player from speaking").color(ChatColor.RED).append("\nUsage: /mute <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
-        if (targetname != null || targetuuid != null){
+        if (targetname != null || targetuuid != null) {
             targetuuid = null;
             targetname = null;
         }
         ProxiedPlayer findTarget = ProxyServer.getInstance().getPlayer(strings[0]);
         Future<String> future = null;
         ExecutorService executorService = null;
-        if (findTarget != null){
+        if (findTarget != null) {
             targetuuid = findTarget.getUniqueId().toString().replace("-", "");
-        }else {
+        } else {
             UUIDFetcher uuidFetcher = new UUIDFetcher();
             uuidFetcher.fetch(strings[0]);
             executorService = Executors.newSingleThreadExecutor();
             future = executorService.submit(uuidFetcher);
         }
-        boolean duration;
+        //mute player time reason
+        //mute player reason
+        //mute player time
+        //mute player
+
+
+        boolean duration = false;
         try {
-            if (strings.length == 1 || strings[1].toLowerCase().endsWith("perm")) {
-                length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
-                duration = true;
-            } else if (strings[1].endsWith("M")) {
-                length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * (long) Integer.parseInt(strings[1].replace("M", ""));
-                duration = true;
-            } else if (strings[1].toLowerCase().endsWith("w")) {
-                length = 1000 * 60 * 60 * 24 * 7 * (long) Integer.parseInt(strings[1].replace("w", ""));
-                duration = true;
-            } else if (strings[1].toLowerCase().endsWith("d")) {
-                length = 1000 * 60 * 60 * 24 * (long) Integer.parseInt(strings[1].replace("d", ""));
-                duration = true;
-            } else if (strings[1].toLowerCase().endsWith("h")) {
-                length = 1000 * 60 * 60 * (long) Integer.parseInt(strings[1].replace("h", ""));
-                duration = true;
-            } else if (strings[1].endsWith("m")) {
-                length = 1000 * 60 * (long) Integer.parseInt(strings[1].replace("m", ""));
-                duration = true;
-            } else if (strings[1].toLowerCase().endsWith("s")) {
-                length = 1000 * (long) Integer.parseInt(strings[1].replace("s", ""));
-                duration = true;
-            }else {
-                duration = false;
+            if (strings.length >= 2) {//todo might need to redo this recognition system
+                if (strings[1].toLowerCase().endsWith("perm"))
+                    length = (long) 3.154e+12;
+                else if (strings[1].endsWith("M"))
+                    length = (long) 2.628e+9 * (long) Integer.parseInt(strings[1].replace("M", ""));
+                else if (strings[1].toLowerCase().endsWith("w"))
+                    length = (long) 6.048e+8 * (long) Integer.parseInt(strings[1].replace("w", ""));
+                else if (strings[1].toLowerCase().endsWith("d"))
+                    length = (long) 8.64e+7 * (long) Integer.parseInt(strings[1].replace("d", ""));
+                else if (strings[1].toLowerCase().endsWith("h"))
+                    length = (long) 3.6e+6 * (long) Integer.parseInt(strings[1].replace("h", ""));
+                else if (strings[1].endsWith("m"))
+                    length = 60000 * (long) Integer.parseInt(strings[1].replace("m", ""));
+                else if (strings[1].toLowerCase().endsWith("s"))
+                    length = 1000 * (long) Integer.parseInt(strings[1].replace("s", ""));
+
+                if (strings[1].toLowerCase().endsWith("perm") || strings[1].toLowerCase().endsWith("w") || strings[1].toLowerCase().endsWith("d") ||
+                        strings[1].toLowerCase().endsWith("h") || strings[1].toLowerCase().endsWith("m") || strings[1].toLowerCase().endsWith("s")) {
+                    length += System.currentTimeMillis();
+                    duration = true;
+                } else {
+                    duration = false;
+                }
             }
-        }catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             player.sendMessage(new ComponentBuilder(plugin.prefix).append(strings[1] + " is not a valid duration!").color(ChatColor.RED).create());
             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Mute a player from speaking").color(ChatColor.RED).append("\nUsage: /mute <player> [length<s|m|h|d|w|M|perm>] [reason]").color(ChatColor.WHITE).create());
             return;
         }
         StringBuilder reason = new StringBuilder();
         if (strings.length > 2 && duration) {
-            for (int i = 2; i < strings.length; i++) {
+            for (int i = 2; i < strings.length; i++)
                 reason.append(strings[i]).append(" ");
-            }
         } else if (!duration) {
-            for (int i = 1; i < strings.length; i++) {
+            for (int i = 1; i < strings.length; i++)
                 reason.append(strings[i]).append(" ");
-            }
-            length = (long) 1000 * 60 * 60 * 24 * 7 * 4 * 12 * 54;
-        }else {
+            length = (long) 3.154e+12 + System.currentTimeMillis();
+        } else if (reason.toString().isEmpty())
             reason.append("Manually Muted");
-        }
-        String reasonString = reason.toString().replace("\"", "'");
-        if (future != null) {
+        if (future != null && targetuuid == null) {
             try {
-                targetuuid = future.get(10, TimeUnit.SECONDS);
+                targetuuid = future.get(1, TimeUnit.SECONDS);
             } catch (Exception e) {
                 try {
                     throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                }catch (DataFecthException dfe){
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
+                } catch (DataFecthException dfe) {
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                     errorHandler.log(dfe);
                     errorHandler.alert(dfe, commandSender);
                 }
@@ -132,38 +133,31 @@ public class MuteCommand extends Command {
             targetname = strings[0];
         }
         try {
-            if (!Permissions.higher(player, targetuuid, targetname)) {
+            if (!Permissions.higher(player, targetuuid)) {
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("You cannot punish that player!").color(ChatColor.RED).create());
                 return;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             try {
                 throw new DataFecthException("User instance required for punishment level checking", player.getName(), "User Instance", Permissions.class.getName(), e);
             } catch (DataFecthException dfe) {
-                ErrorHandler errorHandler = ErrorHandler.getInstance();
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                 errorHandler.log(dfe);
                 errorHandler.alert(e, player);
                 return;
             }
         }
         try {
-            Punishment mute = new Punishment(Punishment.Reason.Manual, reasonString, length, Punishment.Type.MUTE, targetuuid, player.getUniqueId().toString().replace("-", ""));
-            punishMnger.issue(mute, player, targetname, true, true, true);
-        }catch (SQLException e){
-            plugin.getLogger().severe(plugin.prefix + e);
-            sqlfails++;
-            if(sqlfails > 5){
-                try {
-                    throw new PunishmentsDatabaseException("Issuing mute on a player", targetname, this.getName(), e, "/mute", strings);
-                } catch (PunishmentsDatabaseException pde) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
-                    errorHandler.log(pde);
-                    errorHandler.alert(pde, commandSender);
-                    return;
-                }
+            Punishment mute = new Punishment(Punishment.Type.MUTE, Punishment.Reason.Custom, length, targetuuid, targetname, player.getUniqueId().toString().replace("-", ""), reason.toString());
+            punishMnger.issue(mute, player, true, true, true);
+        } catch (SQLException e) {
+            try {
+                throw new PunishmentsDatabaseException("Issuing mute on a player", targetname, this.getName(), e, "/mute", strings);
+            } catch (PunishmentsDatabaseException pde) {
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                errorHandler.log(pde);
+                errorHandler.alert(pde, commandSender);
             }
-            if (plugin.testConnectionManual())
-                this.execute(commandSender, strings);
         }
     }
 }

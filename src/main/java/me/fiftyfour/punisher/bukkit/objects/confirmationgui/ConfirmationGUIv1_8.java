@@ -1,4 +1,4 @@
-package me.fiftyfour.punisher.bukkit.objects.confirmationgui;
+package com.i54mpenguin.punisher.objects.confirmationgui;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -10,7 +10,7 @@ public class ConfirmationGUIv1_8 implements ConfirmationGUI {
     @SuppressWarnings("deprecation")
     @Override
     public void setupMenu() {
-        ItemStack deny = new ItemStack(Material.valueOf("WOOL"), 1, (short) 14);
+        ItemStack deny = new ItemStack(ItemType.Red_WOOMaterial.valueOf("WOOL"), 1, (short) 14);
         ItemStack confirm = new ItemStack(Material.valueOf("WOOL"), 1, (short) 5);
         MENU.addButton(0, deny, ChatColor.RED + "Deny");
         MENU.addButton(1, deny, ChatColor.RED + "Deny");

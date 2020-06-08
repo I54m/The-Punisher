@@ -2,9 +2,8 @@ name: The-Punisher
 author: 54mpenguin
 website: https://54mpenguin.com
 version: ${project.version}
-main: me.fiftyfour.punisher.bungee.BungeeMain
-depend: [LuckPerms]
-softdepend: [Votifier, NuVotifier, AlonsoJDA]
+main: me.fiftyfour.punisher.bungee.PunisherPlugin
+softdepend: [LuckPerms, Votifier, NuVotifier, AlonsoJDA]
 description: The Bungeecord side of the Punisher plugin.
 
 ###################################################################################### Commands ###########################################################################################################
@@ -15,14 +14,12 @@ commands:
   description: Sends a message to admin chat.
   aliases: [ac]
  alts:
-  description: Check or reset a player's ip address from the logs.
+ description: Check or reset a player's ip address from the logs.
  ban:
   description: Ban a player.
  global:
   description: similar to superbroadcast but not as powerful.
   aliases: [g, broadcast]
- help:
-  description: overwrites any other help command to show a custom message.
  history:
   description: View a player's punishment history.
   aliases: [hist]

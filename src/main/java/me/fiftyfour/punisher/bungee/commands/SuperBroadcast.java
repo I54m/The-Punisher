@@ -4,6 +4,7 @@ import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.Title;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -15,6 +16,9 @@ public class SuperBroadcast extends Command {
     }
 
     private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+    public static String prefix;
+    public static ChatColor color;
+    public static Title title;
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
@@ -31,10 +35,23 @@ public class SuperBroadcast extends Command {
         for (String message : strings)
             sb.append(message).append(" ");
         ProxyServer.getInstance().broadcast(new TextComponent("\n"));
-        ProxyServer.getInstance().broadcast(new ComponentBuilder("Announcement: ").color(ChatColor.AQUA).bold(true).append(sb.toString()).color(ChatColor.WHITE).create());
+        ProxyServer.getInstance().broadcast(new ComponentBuilder(prefix.replace("%server%", player.getServer().getInfo().getName()).replace("%player%", player.getName())).append(sb.toString()).color(color).create());
         ProxyServer.getInstance().broadcast(new TextComponent("\n"));
-        for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) {
-            ProxyServer.getInstance().createTitle().title().subTitle(new TextComponent(ChatColor.AQUA + "An Announcement has been made in chat!")).fadeIn(15).stay(75).fadeOut(15).send(all);
+        if (title == null) {
+            if (!PunisherPlugin.config.getString("superbroadcast-title").equalsIgnoreCase("none")) {
+                String[] titleargs = PunisherPlugin.config.getString("superbroadcast-title").split(":");
+                try {
+                    SuperBroadcast.title = ProxyServer.getInstance().createTitle().subTitle(new ComponentBuilder(titleargs[0]).create())
+                            .fadeIn(Integer.parseInt(titleargs[1])).stay(Integer.parseInt(titleargs[2])).fadeOut(Integer.parseInt(titleargs[3]));
+                } catch (NumberFormatException nfe) {
+                    throw new NumberFormatException("One of your superbroadcast-title numbers is not a number! (fade in, stay or fade out");
+                } catch (IndexOutOfBoundsException ioobe) {
+                    throw new IndexOutOfBoundsException("You have not supplied enough arguments in the superbroadcast-title!");
+                }
+            }
+        }
+        for (ProxiedPlayer all : ProxyServer.getInstance().getPlayers()) { // TODO: 15/05/2020 no title sent?
+            title.send(all);
         }
     }
 }

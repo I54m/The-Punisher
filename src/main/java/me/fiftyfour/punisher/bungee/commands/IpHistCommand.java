@@ -1,11 +1,12 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
+import me.fiftyfour.punisher.bungee.managers.DatabaseManager;
 import me.fiftyfour.punisher.universal.exceptions.DataFecthException;
 import me.fiftyfour.punisher.universal.exceptions.PunishmentsDatabaseException;
-import me.fiftyfour.punisher.universal.fetchers.NameFetcher;
-import me.fiftyfour.punisher.universal.fetchers.UUIDFetcher;
+import me.fiftyfour.punisher.universal.util.NameFetcher;
+import me.fiftyfour.punisher.universal.util.UUIDFetcher;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -29,9 +30,9 @@ public class IpHistCommand extends Command {
         super("iphist", "punisher.alts.ip", "ihist", "ih");
     }
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+    private final DatabaseManager dbManager = DatabaseManager.getINSTANCE();
     private String targetuuid;
-    private int sqlfails;
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
@@ -54,12 +55,12 @@ public class IpHistCommand extends Command {
             }
             if (future != null) {
                 try {
-                    targetuuid = future.get(10, TimeUnit.SECONDS);
+                    targetuuid = future.get(1, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     try {
                         throw new DataFecthException("UUID Required for next step", strings[0], "UUID", this.getName(), e);
-                    }catch (DataFecthException dfe){
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
+                    } catch (DataFecthException dfe) {
+                        ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
                         errorHandler.log(dfe);
                         errorHandler.alert(dfe, commandSender);
                     }
@@ -77,8 +78,8 @@ public class IpHistCommand extends Command {
                 targetName = strings[0];
             }
             try {
-                String sql = "SELECT * FROM `iphist` WHERE UUID='" + targetuuid + "'";
-                PreparedStatement stmt = plugin.connection.prepareStatement(sql);
+                String sql = "SELECT * FROM `iphist` WHERE UUID='" + targetuuid + "'"; // TODO: 14/03/2020 make a method in db manager for this
+                PreparedStatement stmt = dbManager.connection.prepareStatement(sql);
                 ResultSet results = stmt.executeQuery();
                 TreeMap<Long, String> iphist = new TreeMap<>();
                 while (results.next()) {
@@ -97,30 +98,23 @@ public class IpHistCommand extends Command {
                     int hoursago = (int) (timeago / (1000 * 60 * 60) % 24);
                     int minutesago = (int) (timeago / (1000 * 60) % 60);
                     if (minutesago <= 0) minutesago = 1;
-                    if (daysago >= 1){
+                    if (daysago >= 1) {
                         player.sendMessage(new ComponentBuilder(ip).color(ChatColor.RED).append(" " + daysago + "d " + hoursago + "h " + minutesago + "m ago").color(ChatColor.GREEN).create());
-                    }else if (hoursago >= 1){
+                    } else if (hoursago >= 1) {
                         player.sendMessage(new ComponentBuilder(ip).color(ChatColor.RED).append(" " + hoursago + "h " + minutesago + "m ago").color(ChatColor.GREEN).create());
-                    }else {
+                    } else {
                         player.sendMessage(new ComponentBuilder(ip).color(ChatColor.RED).append(" " + minutesago + "m ago").color(ChatColor.GREEN).create());
                     }
                     iphist.remove(iphist.firstKey());
                 }
             } catch (SQLException sqle) {
-                plugin.getLogger().severe(plugin.prefix + sqle);
-                sqlfails++;
-                if (sqlfails > 5) {
-                    try {
-                        throw new PunishmentsDatabaseException("Checking ip history", targetName, this.getName(), sqle, "/iphist", strings);
-                    } catch (PunishmentsDatabaseException pde) {
-                        ErrorHandler errorHandler = ErrorHandler.getInstance();
-                        errorHandler.log(pde);
-                        errorHandler.alert(pde, commandSender);
-                        return;
-                    }
+                try {
+                    throw new PunishmentsDatabaseException("Checking ip history", targetName, this.getName(), sqle, "/iphist", strings);
+                } catch (PunishmentsDatabaseException pde) {
+                    ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                    errorHandler.log(pde);
+                    errorHandler.alert(pde, commandSender);
                 }
-                if (plugin.testConnectionManual())
-                    this.execute(commandSender, strings);
             }
         } else commandSender.sendMessage(new TextComponent("You must be a player to use this command!"));
     }

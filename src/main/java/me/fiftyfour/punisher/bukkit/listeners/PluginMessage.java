@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bukkit.listeners;
 
-import me.fiftyfour.punisher.bukkit.BukkitMain;
+import me.fiftyfour.punisher.bukkit.PunisherBukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -19,14 +19,20 @@ public class PluginMessage implements PluginMessageListener {
                 String action = in.readUTF();
                 if (action.equals("playsound")) {
                     String[] soundstrings = in.readUTF().split(":");
-                    Sound sound = Sound.valueOf(soundstrings[0]);
+                    Sound sound;
+                    try {
+                        sound = Sound.valueOf(soundstrings[0]);
+                    } catch (Exception e) {
+                        //sound doesn't exist on this version of mc
+                        return;
+                    }
                     int volume = Integer.parseInt(soundstrings[1]);
                     float pitch = Float.parseFloat(soundstrings[2]);
                     player.playSound(player.getLocation(), sound, volume, pitch);
                 } else if (action.equals("repcache")) {
                     double rep = Double.parseDouble(in.readUTF());
                     String uuid = in.readUTF();
-                    BukkitMain.repCache.put(uuid, rep);
+                    PunisherBukkit.repCache.put(uuid, rep);
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();

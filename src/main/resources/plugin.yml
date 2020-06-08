@@ -3,9 +3,8 @@ author: 54mpenguin
 website: https://54mpenguin.com
 version: ${project.version}
 api-version: 1.13
-main: me.fiftyfour.punisher.bukkit.BukkitMain
-depend: [LuckPerms]
-softdepend: [MVdWPlaceholderAPI]
+main: me.fiftyfour.punisher.bukkit.PunisherBukkit
+softdepend: [MVdWPlaceholderAPI, LuckPerms]
 description: The Spigot side of the Punisher plugin.
 
 commands:
@@ -18,9 +17,6 @@ commands:
   togglechat:
     description: Toggles chat.
     aliases: [tc, chattoggle]
-  bold:
-    description: sends a chat message in bold or red bold.
-    aliases: [b]
   punisherbukkit:
     description: admin commands for the bukkit side of the punisher
 

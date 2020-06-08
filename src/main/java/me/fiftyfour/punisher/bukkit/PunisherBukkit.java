@@ -1,15 +1,27 @@
 package me.fiftyfour.punisher.bukkit;
 
 import be.maximvdw.placeholderapi.PlaceholderAPI;
-import me.fiftyfour.punisher.bukkit.commands.*;
+import me.fiftyfour.punisher.bukkit.commands.BukkitAdmin;
+import me.fiftyfour.punisher.bukkit.commands.ClearChat;
+import me.fiftyfour.punisher.bukkit.commands.PunishGUI;
+import me.fiftyfour.punisher.bukkit.commands.ToggleChat;
 import me.fiftyfour.punisher.bukkit.listeners.PluginMessage;
 import me.fiftyfour.punisher.bukkit.listeners.PostLogin;
-import me.fiftyfour.punisher.bukkit.objects.LevelOnePunishMenu;
-import me.fiftyfour.punisher.bukkit.objects.LevelThreePunishMenu;
-import me.fiftyfour.punisher.bukkit.objects.LevelTwoPunishMenu;
-import me.fiftyfour.punisher.bukkit.objects.LevelZeroPunishMenu;
-import me.fiftyfour.punisher.universal.systems.UpdateChecker;
-import me.lucko.luckperms.api.LuckPermsApi;
+import me.fiftyfour.punisher.bukkit.objects.confirmationgui.ConfirmationGUI;
+import me.fiftyfour.punisher.bukkit.objects.confirmationgui.ConfirmationGUIv1_13;
+import me.fiftyfour.punisher.bukkit.objects.confirmationgui.ConfirmationGUIv1_8;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelone.LevelOnePunishMenu;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelone.LevelOnePunishMenuV1_13;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelone.LevelOnePunishMenuV1_8;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelone.LevelOnePunishMenuV1_9;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelthree.*;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.leveltwo.*;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelzero.LeveLZeroPunishMenuV1_13;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelzero.LeveLZeroPunishMenuV1_8;
+import me.fiftyfour.punisher.bukkit.objects.punishmenu.levelzero.LevelZeroPunishMenu;
+import me.fiftyfour.punisher.universal.util.LuckPermsHook;
+import me.fiftyfour.punisher.universal.util.Permissions;
+import me.fiftyfour.punisher.universal.util.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -23,20 +35,27 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BukkitMain extends JavaPlugin implements Listener {
+public class PunisherBukkit extends JavaPlugin implements Listener {
     public static boolean update = false;
     public static Map<String, Double> repCache = new HashMap<>();
-    private static BukkitMain instance;
+    public static String COMPATIBILITY = "N/A";
     private static long nextRepUpdate;
-    public String chatState;
+    private static PunisherBukkit instance;
     private String prefix = ChatColor.GRAY + "[" + ChatColor.RED + "Punisher" + ChatColor.GRAY + "] " + ChatColor.RESET;
+    public String chatState = "on";
+    public LuckPermsHook luckPermsHook = null;
+    public LevelZeroPunishMenu levelZeroPunishMenu;
+    public LevelOnePunishMenu levelOnePunishMenu;
+    public LevelTwoPunishMenu levelTwoPunishMenu;
+    public LevelThreePunishMenu levelThreePunishMenu;
+    public ConfirmationGUI confirmationGUI;
 
-    public static BukkitMain getInstance() {
+    public static PunisherBukkit getInstance() {
         return instance;
     }
 
-    private static void setInstance(BukkitMain instance) {
-        BukkitMain.instance = instance;
+    private static void setInstance(PunisherBukkit instance) {
+        PunisherBukkit.instance = instance;
     }
 
     public static void updateRepCache() {
@@ -47,7 +66,7 @@ public class BukkitMain extends JavaPlugin implements Listener {
                 DataOutputStream out = new DataOutputStream(outbytes);
                 out.writeUTF("getrepcache");
                 out.writeUTF(players.getUniqueId().toString().replace("-", ""));
-                players.sendPluginMessage(BukkitMain.getPlugin(BukkitMain.class), "punisher:minor", outbytes.toByteArray());
+                players.sendPluginMessage(PunisherBukkit.getPlugin(PunisherBukkit.class), "punisher:minor", outbytes.toByteArray());
                 out.close();
                 outbytes.close();
             } catch (IOException ioe) {
@@ -57,55 +76,39 @@ public class BukkitMain extends JavaPlugin implements Listener {
     }
 
     @Override
-    public void onEnable() {
-        //Check if version of mc is compatible
-//        if (this.getServer().getVersion().contains("1.13")) {
-//            getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft 1.13.x");
-//            getServer().getConsoleSender().sendMessage("Please downgrade to 1.12.2 to get this version to work!");
-//            getServer().getConsoleSender().sendMessage("Or update to the punisher 1.9+ to use this spigot version.");
-//            getServer().getConsoleSender().sendMessage("Other compatible spigot versions include: 1.8.x, 1.9.x, 1.10.x, 1.11.x and 1.12.x!");
-//            getServer().getConsoleSender().sendMessage("Plugin Disabled!");
-//            this.setEnabled(false);
-//            return;
-//        } else
-        if (!this.getServer().getVersion().contains("1.13")) {
-            getServer().getConsoleSender().sendMessage("This version of the punisher is not compatible with minecraft " + this.getServer().getVersion());
-            getServer().getConsoleSender().sendMessage("Please use the punisher 1.8-LEGACY for this version of minecraft!");
-            getServer().getConsoleSender().sendMessage("Or consider updating to 1.13.x to have the latest new features!");
-            getServer().getConsoleSender().sendMessage("Plugin Disabled!");
-            this.setEnabled(false);
-            return;
-        }
-        //check for dependencies
-        try {
-            if (Bukkit.getServicesManager().getRegistration(LuckPermsApi.class) == null) {
-                getServer().getConsoleSender().sendMessage("Luck Perms not detected, Plugin has been Disabled!");
-                this.setEnabled(false);
-                return;
-            }
-        } catch (Exception e) {
-            getServer().getConsoleSender().sendMessage("Luck Perms not detected, Plugin has been Disabled!");
-            this.setEnabled(false);
-            return;
-        }
-        //set variables
+    public void onEnable() { // TODO: 15/03/2020 maybe add a placeholderapi place holder for reputation
         setInstance(this);
-        chatState = "on";
-        //setup punish gui menus
-        LevelZeroPunishMenu.setupMenu();
-        LevelOnePunishMenu.setupMenu();
-        LevelTwoPunishMenu.setupMenu();
-        LevelThreePunishMenu.setupMenu();
+        //setup punish gui menus & check version
+        //      check for dependencies
+        luckPermsHook = new LuckPermsHook().hook();
+        if (luckPermsHook == null) {
+            getLogger().warning(prefix + ChatColor.RED + "Luck Perms not detected, Plugin has been Disabled!");
+            this.setEnabled(false);
+            return;
+        }
+        Permissions.init();//init permissions to hook into luckperms
+        if (!setupPunishMenus()) {
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "This version of the punisher is not compatible with minecraft " + this.getServer().getVersion());
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "Please update your server to support Minecraft 1.8+");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "Plugin Disabled!");
+            this.setEnabled(false);
+            return;
+        }
+        levelZeroPunishMenu.setupMenu();
+        levelOnePunishMenu.setupMenu();
+        levelTwoPunishMenu.setupMenu();
+        levelThreePunishMenu.setupMenu();
+        confirmationGUI.setupMenu();
+        getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Running Compatibility for: " + COMPATIBILITY);
         //register commands
-        getCommand("punish").setExecutor(new PunishCommand());
+        getCommand("punish").setExecutor(new PunishGUI());
         getCommand("clearchat").setExecutor(new ClearChat());
         getCommand("togglechat").setExecutor(new ToggleChat());
-        getCommand("bold").setExecutor(new BoldCommand());
-        getCommand("punisherbukkit").setExecutor(new PunisherBukkit());
+        getCommand("punisherbukkit").setExecutor(new BukkitAdmin());
         //register plugin message channels
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "punisher:minor", new PluginMessage());
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "punisher:minor");
-        Bukkit.getMessenger().registerIncomingPluginChannel(this, "punisher:main", new PunishCommand());
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, "punisher:main", new PunishGUI());
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "punisher:main");
         //check for update
         getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Checking for updates...");
@@ -130,14 +133,14 @@ public class BukkitMain extends JavaPlugin implements Listener {
             }
         }
         if (this.getDescription().getVersion().contains("LEGACY")) {
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a LEGACY version of The Punisher");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a LEGACY version of The PunisherPlugin");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "This version is no longer updated with new features and ONLY MAJOR BUGS WILL BE FIXED!!");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "It is recommended that you update your server to 1.13.2 to have the new features.");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
             update = false;
         } else if (this.getDescription().getVersion().contains("BETA") && this.getDescription().getVersion().contains("PRE-RELEASE")
                 && this.getDescription().getVersion().contains("DEV-BUILD") && this.getDescription().getVersion().contains("SNAPSHOT")) {
-            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The Punisher");
+            getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "You are running a PRE-RELEASE version of The PunisherPlugin");
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.GREEN + "Update checking is not needed in these versions");
             update = false;
         }
@@ -174,5 +177,46 @@ public class BukkitMain extends JavaPlugin implements Listener {
 
         } else
             getServer().getConsoleSender().sendMessage(prefix + ChatColor.RED + "MVDWPlaceholderApi Not detected reputation placeholder will not work!");
+    }
+
+    private boolean setupPunishMenus() {
+        if (this.getServer().getVersion().contains("1.8")) {
+            //use 1.8 menus
+            levelZeroPunishMenu = new LeveLZeroPunishMenuV1_8();
+            levelOnePunishMenu = new LevelOnePunishMenuV1_8();
+            levelTwoPunishMenu = new LevelTwoPunishMenuV1_8();
+            levelThreePunishMenu = new LevelThreePunishMenuV1_8();
+            confirmationGUI = new ConfirmationGUIv1_8();
+            COMPATIBILITY = "MC: 1.8";
+            return true;
+        } else if (this.getServer().getVersion().contains("1.9") || this.getServer().getVersion().contains("1.10") || this.getServer().getVersion().contains("1.11") || this.getServer().getVersion().contains("1.12")) {
+            //use 1.9 menus
+            levelZeroPunishMenu = new LeveLZeroPunishMenuV1_8();//no change since last version
+            levelOnePunishMenu = new LevelOnePunishMenuV1_9();
+            levelTwoPunishMenu = new LevelTwoPunishMenuV1_9();
+            levelThreePunishMenu = new LevelThreePunishMenuV1_9();
+            confirmationGUI = new ConfirmationGUIv1_8();//no change since last version
+            COMPATIBILITY = "MC: 1.9 - 1.12";
+            return true;
+        } else if (this.getServer().getVersion().contains("1.13") || this.getServer().getVersion().contains("1.14")) {
+            //use 1.13 menus
+            levelZeroPunishMenu = new LeveLZeroPunishMenuV1_13();
+            levelOnePunishMenu = new LevelOnePunishMenuV1_13();
+            levelTwoPunishMenu = new LevelTwoPunishMenuV1_13();
+            levelThreePunishMenu = new LevelThreePunishMenuV1_13();
+            confirmationGUI = new ConfirmationGUIv1_13();
+            COMPATIBILITY = "MC: 1.13 - 1.14";
+            return true;
+        } else if (this.getServer().getVersion().contains("1.15") || this.getServer().getVersion().contains("1.16")) {
+            //use 1.15 menus
+            levelZeroPunishMenu = new LeveLZeroPunishMenuV1_13();//no change since last version
+            levelOnePunishMenu = new LevelOnePunishMenuV1_13();//no change since last version
+            levelTwoPunishMenu = new LevelTwoPunishMenuV1_15();
+            levelThreePunishMenu = new LevelThreePunishMenuV1_15();
+            confirmationGUI = new ConfirmationGUIv1_13();//no change since last version
+            COMPATIBILITY = "MC: 1.15+ (Latest Compatibility)";
+            return true;
+        } else return false;
+
     }
 }

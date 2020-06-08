@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.listeners;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import me.fiftyfour.punisher.bungee.chats.StaffChat;
 import me.fiftyfour.punisher.bungee.handlers.ErrorHandler;
 import me.fiftyfour.punisher.bungee.managers.PunishmentManager;
@@ -15,45 +15,37 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 public class PlayerChat implements Listener {
-    private BungeeMain plugin = BungeeMain.getInstance();
-    private HashMap<ProxiedPlayer, Integer> sqlfails = new HashMap<>();
-    private PunishmentManager punishmentManager = PunishmentManager.getInstance();
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
+    private final PunishmentManager punishmentManager = PunishmentManager.getINSTANCE();
 
     @EventHandler
     public void onChat(ChatEvent event) {
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
-        int sqlfails;
-        if (this.sqlfails.get(player) == null)
-            sqlfails = 0;
-        else
-            sqlfails = this.sqlfails.get(player);
         ServerInfo server = player.getServer().getInfo();
-        if (PluginMessage.chatOffServers.contains(server)){
-            if(!player.hasPermission("punisher.togglechat.bypass")){
-                if (event.isCommand()){
+        if (PluginMessage.chatOffServers.contains(server)) {
+            if (!player.hasPermission("punisher.togglechat.bypass")) {
+                if (event.isCommand()) {
                     String[] args = event.getMessage().split(" ");
                     List<String> mutedcommands;
-                    mutedcommands = BungeeMain.PunisherConfig.getStringList("Muted Commands");
+                    mutedcommands = PunisherPlugin.config.getStringList("Muted Commands");
                     if (mutedcommands.contains(args[0])) {
                         event.setCancelled(true);
                         player.sendMessage(new ComponentBuilder(plugin.prefix).append("You may not use that command at this time!").color(ChatColor.RED).create());
-                    }else{
+                    } else {
                         event.setCancelled(false);
                     }
                     return;
                 }
                 event.setCancelled(true);
                 player.sendMessage(new ComponentBuilder(plugin.prefix).append("You may not chat at this time!").color(ChatColor.RED).create());
-                return;
-            }else {
+            } else {
                 event.setCancelled(false);
-                return;
             }
+            return;
         }
         UUID uuid = player.getUniqueId();
         String fetcheduuid = uuid.toString().replace("-", "");
@@ -62,77 +54,55 @@ public class PlayerChat implements Listener {
             if (punishmentManager.isMuted(fetcheduuid)) {
                 Punishment mute = punishmentManager.getMute(fetcheduuid);
                 if (player.hasPermission("punisher.bypass")) {
-                    punishmentManager.revoke(mute, null, targetname, true, false);
-                    StaffChat.sendMessage(player.getName() + " Bypassed their mute, Unmuting...");
+                    punishmentManager.remove(mute, null, true, true, false);
+                    StaffChat.sendMessage(new ComponentBuilder(player.getName() + " Bypassed their mute, Unmuting...").color(ChatColor.RED).event(mute.getHoverEvent()).create(), true);
                     return;
                 }
-                long mutetime = mute.getDuration();
-                long muteleftmillis = mutetime - System.currentTimeMillis();
-                int daysleft = (int) (muteleftmillis / (1000 * 60 * 60 * 24));
-                int hoursleft = (int) (muteleftmillis / (1000 * 60 * 60) % 24);
-                int minutesleft = (int) (muteleftmillis / (1000 * 60) % 60);
-                int secondsleft = (int) (muteleftmillis / 1000 % 60);
-                if (System.currentTimeMillis() > mutetime) {
-                    punishmentManager.revoke(mute, null, targetname, false, false);
+                if (System.currentTimeMillis() > mute.getExpiration()) {
+                    punishmentManager.remove(mute, null, false, false, false);
                     player.sendMessage(new ComponentBuilder(plugin.prefix).append("Your Mute has expired!").color(ChatColor.GREEN).create());
-                    BungeeMain.Logs.info(player.getName() + "'s mute expired so was unmuted");
+                    PunisherPlugin.LOGS.info(player.getName() + "'s mute expired so they were unmuted");
                 } else {
+                    String timeLeft = punishmentManager.getTimeLeft(mute);
                     if (event.isCommand()) {
                         String[] args = event.getMessage().split(" ");
                         List<String> mutedcommands;
-                        mutedcommands = BungeeMain.PunisherConfig.getStringList("Muted Commands");
+                        mutedcommands = PunisherPlugin.config.getStringList("Muted Commands");
                         if (!mutedcommands.contains(args[0])) {
                             event.setCancelled(true);
                             String muteMessage;
-                            if (daysleft > 730) {
-                                muteMessage = BungeeMain.PunisherConfig.getString("PermMute Deny Message").replace("%reason%", mute.getMessage())
-                                        .replace("%days%", String.valueOf(daysleft)).replace("%hours%", String.valueOf(hoursleft))
-                                        .replace("%minutes%", String.valueOf(minutesleft)).replace("%seconds%", String.valueOf(secondsleft));
-                            } else {
-                                muteMessage = BungeeMain.PunisherConfig.getString("TempMute Deny Message").replace("%reason%", mute.getMessage())
-                                        .replace("%days%", String.valueOf(daysleft)).replace("%hours%", String.valueOf(hoursleft))
-                                        .replace("%minutes%", String.valueOf(minutesleft)).replace("%seconds%", String.valueOf(secondsleft));
-                            }
+                            if (mute.isPermanent())
+                                muteMessage = PunisherPlugin.config.getString("PermMute Deny Message").replace("%reason%", mute.getMessage()).replace("%timeleft%", timeLeft);
+                            else
+                                muteMessage = PunisherPlugin.config.getString("TempMute Deny Message").replace("%reason%", mute.getMessage()).replace("%timeleft%", timeLeft);
+
                             player.sendMessage(new ComponentBuilder(ChatColor.translateAlternateColorCodes('&', muteMessage)).create());
                         }
-                    }else {
+                    } else {
                         event.setCancelled(true);
                         String muteMessage;
-                        if (daysleft > 730) {
-                            muteMessage = BungeeMain.PunisherConfig.getString("PermMute Deny Message").replace("%reason%", mute.getMessage())
-                                    .replace("%days%", String.valueOf(daysleft)).replace("%hours%", String.valueOf(hoursleft))
-                                    .replace("%minutes%", String.valueOf(minutesleft)).replace("%seconds%", String.valueOf(secondsleft));
-                        } else {
-                            muteMessage = BungeeMain.PunisherConfig.getString("TempMute Deny Message").replace("%reason%", mute.getMessage())
-                                    .replace("%days%", String.valueOf(daysleft)).replace("%hours%", String.valueOf(hoursleft))
-                                    .replace("%minutes%", String.valueOf(minutesleft)).replace("%seconds%", String.valueOf(secondsleft));
-                        }
+                        if (mute.isPermanent())
+                            muteMessage = PunisherPlugin.config.getString("PermMute Deny Message").replace("%reason%", mute.getMessage()).replace("%timeleft%", timeLeft);
+                        else
+                            muteMessage = PunisherPlugin.config.getString("TempMute Deny Message").replace("%reason%", mute.getMessage()).replace("%timeleft%", timeLeft);
                         player.sendMessage(new ComponentBuilder(ChatColor.translateAlternateColorCodes('&', muteMessage)).create());
-                        if (BungeeMain.PunisherConfig.getBoolean("SendPlayersMessageToStaffChatOnMuteDeny"))
-                            StaffChat.sendMessage(player.getName() + " Tried to speak but is muted: " + event.getMessage());
-                        else if (BungeeMain.PunisherConfig.getBoolean("StaffChatOnMuteDeny"))
-                            StaffChat.sendMessage(player.getName() + " Tried to speak but is muted!");
+                        if (PunisherPlugin.config.getBoolean("SendPlayersMessageToStaffChatOnMuteDeny"))
+                            StaffChat.sendMessage(player.getName() + " Tried to speak but is muted: " + event.getMessage(), true);
+                        else if (PunisherPlugin.config.getBoolean("StaffChatOnMuteDeny"))
+                            StaffChat.sendMessage(player.getName() + " Tried to speak but is muted!", true);
                     }
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe(plugin.prefix + e);
-            sqlfails++;
-            this.sqlfails.put(player, sqlfails);
-            if (sqlfails > 5) {
-                try {
-                    throw new PunishmentsDatabaseException("Issuing ban on a player", targetname, this.getClass().getName(), e);
-                } catch (PunishmentsDatabaseException pde) {
-                    ErrorHandler errorHandler = ErrorHandler.getInstance();
-                    errorHandler.log(pde);
-                    errorHandler.alert(pde, player);
-                    errorHandler.adminChatAlert(pde, player);
-                    event.setCancelled(true);
-                    return;
-                }
+            try {
+                throw new PunishmentsDatabaseException("Removing mute on a player", targetname, this.getClass().getName(), e);
+            } catch (PunishmentsDatabaseException pde) {
+                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                errorHandler.log(pde);
+                errorHandler.alert(pde, player);
+                errorHandler.adminChatAlert(pde, player);
+                event.setCancelled(true);
             }
-            if(plugin.testConnectionManual())
-                this.onChat(new ChatEvent(event.getSender(), event.getReceiver(), event.getMessage()));
         }
     }
 }

@@ -16,7 +16,6 @@ public class DataFecthException extends Exception {
 
     @Override
     public String getMessage() {
-        return causingClass + ".class has failed to fetch " + requestedInfo + " on user " + user + ", this was caused by " + cause + ". Reason for data request: " + reason +
-                ". Error message from exception cause: " + cause.getMessage();
+        return causingClass + ".class has failed to fetch " + requestedInfo + " on user " + user + ", this was caused by " + cause + ". Reason for data request: " + reason;
     }
 }

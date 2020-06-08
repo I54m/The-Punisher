@@ -1,6 +1,6 @@
 package me.fiftyfour.punisher.bungee.commands;
 
-import me.fiftyfour.punisher.bungee.BungeeMain;
+import me.fiftyfour.punisher.bungee.PunisherPlugin;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -9,12 +9,14 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
-public class GlobalCommand extends Command {
-    public GlobalCommand() {
-        super("broadcast", "punisher.broadcast", "global");
-    }
+public class BroadcastCommand extends Command {
+    public static String prefix;
+    public static ChatColor color;
+    private final PunisherPlugin plugin = PunisherPlugin.getInstance();
 
-    private BungeeMain plugin = BungeeMain.getInstance();
+    public BroadcastCommand() {
+        super("broadcast", "punisher.broadcast", "global", "shout");
+    }
 
     @Override
     public void execute(CommandSender commandSender, String[] strings) {
@@ -23,42 +25,38 @@ public class GlobalCommand extends Command {
             return;
         }
         ProxiedPlayer player = (ProxiedPlayer) commandSender;
-        if (BungeeMain.CooldownsConfig.contains(player.getUniqueId().toString()) ){
-            long cooldowntime = BungeeMain.CooldownsConfig.getLong(player.getUniqueId().toString());
+        if (PunisherPlugin.cooldownsConfig.contains(player.getUniqueId().toString())) {
+            long cooldowntime = PunisherPlugin.cooldownsConfig.getLong(player.getUniqueId().toString());
             if (cooldowntime > System.currentTimeMillis() && !player.hasPermission("punisher.cooldowns.override")) {
-                Long cooldownleftmillis = cooldowntime - System.currentTimeMillis();
+                long cooldownleftmillis = cooldowntime - System.currentTimeMillis();
                 int hoursleft = (int) (cooldownleftmillis / (1000 * 60 * 60));
                 int minutesleft = (int) (cooldownleftmillis / (1000 * 60) % 60);
                 int secondsleft = (int) (cooldownleftmillis / 1000 % 60);
-                if(hoursleft > 0){
+                if (hoursleft > 0) {
                     player.sendMessage(new ComponentBuilder("You have done that recently, please wait: " + hoursleft + "h " + minutesleft + "m " + secondsleft + "s before doing this again!").color(ChatColor.RED).create());
-                    return;
-                }else{
-                    if(minutesleft > 0) {
+                } else {
+                    if (minutesleft > 0) {
                         player.sendMessage(new ComponentBuilder("You have done that recently, please wait: " + minutesleft + "m " + secondsleft + "s before doing this again!").color(ChatColor.RED).create());
-                        return;
-                    }else{
+                    } else {
                         player.sendMessage(new ComponentBuilder("You have done that recently, please wait: " + secondsleft + "s before doing this again!").color(ChatColor.RED).create());
-                        return;
                     }
                 }
-            }else{
+            } else {
                 if (strings.length == 0) {
-                    player.sendMessage(new ComponentBuilder(plugin.prefix).append("Similar to Super Broadcast but not as powerful").color(ChatColor.RED).append("\nUsage: /global <message>").color(ChatColor.WHITE).create());
+                    player.sendMessage(new ComponentBuilder(plugin.prefix).append("Similar to Super Broadcast but not as powerful").color(ChatColor.RED).append("\nUsage: /broadcast <message>").color(ChatColor.WHITE).create());
                     return;
                 }
                 StringBuilder sb = new StringBuilder();
                 for (String message : strings)
                     sb.append(message).append(" ");
-                ProxyServer.getInstance().broadcast(new ComponentBuilder("[").color(ChatColor.DARK_PURPLE).append(player.getServer().getInfo().getName()).color(ChatColor.LIGHT_PURPLE).bold(true).append("] ").color(ChatColor.DARK_PURPLE).bold(false)
-                        .append(player.getName()).color(ChatColor.WHITE).bold(true).append(" » ").color(ChatColor.WHITE).bold(true).append(sb.toString()).color(ChatColor.LIGHT_PURPLE).bold(false).create());
-                long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
+                ProxyServer.getInstance().broadcast(new ComponentBuilder(prefix.replace("%server%", player.getServer().getInfo().getName()).replace("%player%", player.getName())).append(sb.toString()).color(color).create());
+                long setcooldowntime = PunisherPlugin.config.getLong("broadcast-cooldown");
                 setcooldowntime = setcooldowntime * 60 * 60 * 1000;
                 setcooldowntime += System.currentTimeMillis();
-                BungeeMain.CooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);
-                BungeeMain.saveCooldowns();
-                return;
+                PunisherPlugin.cooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);
+                PunisherPlugin.saveCooldowns();
             }
+            return;
         }
         if (strings.length == 0) {
             player.sendMessage(new ComponentBuilder(plugin.prefix).append("Similar to Super Broadcast but not as powerful").color(ChatColor.RED).append("\nUsage: /global <message>").color(ChatColor.WHITE).create());
@@ -67,12 +65,11 @@ public class GlobalCommand extends Command {
         StringBuilder sb = new StringBuilder();
         for (String message : strings)
             sb.append(message).append(" ");
-        ProxyServer.getInstance().broadcast(new ComponentBuilder("[").color(ChatColor.DARK_PURPLE).append(player.getServer().getInfo().getName()).color(ChatColor.LIGHT_PURPLE).bold(true).append("] ").color(ChatColor.DARK_PURPLE).bold(false)
-                .append(player.getName()).color(ChatColor.WHITE).bold(true).append(" » ").color(ChatColor.WHITE).bold(true).append(sb.toString()).color(ChatColor.LIGHT_PURPLE).bold(false).create());
-        long setcooldowntime = BungeeMain.PunisherConfig.getLong("/global Cooldown");
+        ProxyServer.getInstance().broadcast(new ComponentBuilder(prefix.replace("%server%", player.getServer().getInfo().getName()).replace("%player%", player.getName())).append(sb.toString()).color(color).create());
+        long setcooldowntime = PunisherPlugin.config.getLong("broadcast-cooldown");
         setcooldowntime = setcooldowntime * 60 * 60 * 1000;
         setcooldowntime += System.currentTimeMillis();
-        BungeeMain.CooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);
-        BungeeMain.saveCooldowns();
+        PunisherPlugin.cooldownsConfig.set(player.getUniqueId().toString(), setcooldowntime);
+        PunisherPlugin.saveCooldowns();
     }
 }
