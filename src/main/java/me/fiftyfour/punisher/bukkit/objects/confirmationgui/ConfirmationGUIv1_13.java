@@ -1,4 +1,4 @@
-package com.i54mpenguin.punisher.objects.confirmationgui;
+package me.fiftyfour.punisher.bukkit.objects.confirmationgui;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

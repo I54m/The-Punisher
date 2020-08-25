@@ -1,4 +1,4 @@
-package com.i54mpenguin.punisher.objects.confirmationgui;
+package me.fiftyfour.punisher.bukkit.objects.confirmationgui;
 
 import me.fiftyfour.punisher.bukkit.commands.PunishGUI;
 import me.fiftyfour.punisher.bukkit.objects.IconMenu;
