@@ -17,6 +17,11 @@
     <repositories>
 
         <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+
+        <repository>
             <id>spigot-repo</id>
             <name>spigotmc</name>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
@@ -146,9 +151,16 @@
         </dependency>
 
         <dependency>
-            <groupId>com.vexsoftware</groupId>
-            <artifactId>nuvotifier-universal</artifactId>
-            <version>2.3.4</version>
+            <groupId>com.github.NuVotifier.NuVotifier</groupId>
+            <artifactId>nuvotifier-bungeecord</artifactId>
+            <version>2.7.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.NuVotifier.NuVotifier</groupId>
+            <artifactId>nuvotifier-bukkit</artifactId>
+            <version>2.7.2</version>
             <scope>provided</scope>
         </dependency>
 
