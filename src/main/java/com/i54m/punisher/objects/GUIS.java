@@ -157,7 +157,7 @@ public class GUIS {
                 CONFIRMSLOTS.add(26);
 
                 CONFIRMATION.setFill(new ItemStack(ItemType.valueOf(guiConfig.getString("CONFIRMATION.items.confirm.material", "GRAY_STAINED_GLASS_PANE")), 1));
-
+                continue;
             }
             IconMenu MENU = gui.getMenu();
             MENU.setType(InventoryType.getChestInventoryWithRows(guiConfig.getInt(gui.name() + ".rows")));

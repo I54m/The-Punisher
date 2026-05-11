@@ -171,7 +171,7 @@ LEVEL_TWO:
         - "&fIncludes lava curtaining and tnt cannoning"
       reason: "GREIFING"
     24:
-      material: "SIGN"
+      material: "OAK_SIGN"
       name: "&cServer Advertisement"
       lore:
         - "&fWarning: Must also clear chat after you have proof!!"
@@ -293,7 +293,7 @@ LEVEL_THREE:
         - "&fIncludes lava curtaining and tnt cannoning"
       reason: "GREIFING"
     24:
-      material: "SIGN"
+      material: "OAK_SIGN"
       name: "&cServer Advertisement"
       lore:
         - "&fWarning: Must also clear chat after you have proof!!"

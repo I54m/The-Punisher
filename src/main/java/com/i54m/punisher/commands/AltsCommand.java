@@ -75,8 +75,17 @@ public class AltsCommand extends Command {
                         targetname = strings[1];
                     }
                     if (strings[0].equalsIgnoreCase("reset") && player.hasPermission("punisher.alts.reset")) {
-                        commandSender.sendMessage(new ComponentBuilder(plugin.getPrefix()).append("Command not yet available!").color(ChatColor.RED).create());
-                        return;
+                        if (plugin.getStorageManager().getAlts(targetuuid) != null ||
+                                !plugin.getStorageManager().getAlts(targetuuid).isEmpty()) {
+                            try {
+                                plugin.getStorageManager().resetAlts(targetuuid);
+                            } catch (Exception e) {
+                                ErrorHandler errorHandler = ErrorHandler.getINSTANCE();
+                                errorHandler.log(e);
+                                errorHandler.alert(e, commandSender);
+                            }
+                        } else
+                            commandSender.sendMessage(new ComponentBuilder(plugin.getPrefix()).append("That player does not have any alts to be reset!").color(ChatColor.RED).create());
                     } else if (strings[0].equalsIgnoreCase("get")) {
                         ExecutorService executorService1;
                         Future<BaseComponent[]> futurestatus;

@@ -3,13 +3,6 @@ package com.i54m.punisher.utils;
 import com.google.gson.Gson;
 import lombok.Getter;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
-
 public class UpdateChecker {
 
     private static final Update UPDATE = callURL();
@@ -48,36 +41,39 @@ public class UpdateChecker {
     }
 
     protected static Update callURL() {
-        StringBuilder sb = new StringBuilder();
-        URLConnection urlConn;
-        try {
-            urlConn = new URL("https://api.i54m.com/the-punisher/version/").openConnection();
-            urlConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-            urlConn.setReadTimeout(5000);
-            if (urlConn.getInputStream() != null) {
-                InputStreamReader in = new InputStreamReader(urlConn.getInputStream(), Charset.defaultCharset());
-                BufferedReader bufferedReader = new BufferedReader(in);
-                if (bufferedReader.ready()) {
-                    int cp;
-                    while ((cp = bufferedReader.read()) != -1) {
-                        sb.append((char) cp);
-                    }
-                    bufferedReader.close();
-                }
-                in.close();
-            }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            return null;
-        }catch(Exception e) {
-            e.printStackTrace();
-        }
-        if (!sb.toString().isEmpty()) {
-            Gson g = new Gson();
-            Update update;
-            update = g.fromJson(sb.toString(), Update.class);
-            return update;
-        }else return new Update("null", "null");
+//        StringBuilder sb = new StringBuilder();
+//        URLConnection urlConn;
+//        try {
+//            urlConn = new URL("https://api.i54m.com/the-punisher/version/").openConnection();
+//            urlConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+//            urlConn.setReadTimeout(5000);
+//            if (urlConn.getInputStream() != null) {
+//                InputStreamReader in = new InputStreamReader(urlConn.getInputStream(), Charset.defaultCharset());
+//                BufferedReader bufferedReader = new BufferedReader(in);
+//                if (bufferedReader.ready()) {
+//                    int cp;
+//                    while ((cp = bufferedReader.read()) != -1) {
+//                        sb.append((char) cp);
+//                    }
+//                    bufferedReader.close();
+//                }
+//                in.close();
+//            }
+//        } catch (IOException ioe) {
+//            ioe.printStackTrace();
+//            return null;
+//        }catch(Exception e) {
+//            e.printStackTrace();
+//        }
+//        if (!sb.toString().isEmpty()) {
+//            Gson g = new Gson();
+//            Update update;
+//            update = g.fromJson(sb.toString(), Update.class);
+//            return update;
+//        }else return new Update("null", "null");
+
+        Gson g = new Gson();
+        return g.fromJson("{ 'currentVersionNumber' : '1.9' , 'lastUpdate' : '15/07/2019' }", Update.class);
     }
 
     protected static class Update {

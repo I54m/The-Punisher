@@ -103,6 +103,8 @@ public interface StorageManager extends Manager {// TODO: 9/11/2020 Add Javadocs
 
     void updateAlts(@NotNull UUID uuid, @NotNull String ip) throws PunishmentsStorageException;
 
+    void resetAlts(@NotNull UUID uuid) throws PunishmentsStorageException;
+
     void updateIpHist(@NotNull UUID uuid, @NotNull String ip) throws PunishmentsStorageException;
 
     Punishment getPunishmentFromId(int id) throws PunishmentsStorageException;

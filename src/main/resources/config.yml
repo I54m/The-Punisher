@@ -168,7 +168,6 @@ Punishment Authorization:
       - "IMPERSONATION"
       - "INAPPROPRIATE_LINK"
 
-# not yet implemented todo reimplement discord bot from old v1 src code
 DiscordIntegration:
   Enabled: false
   BotToken: "<insert bot token here>"

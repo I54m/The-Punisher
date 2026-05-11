@@ -3,6 +3,8 @@ package com.i54m.punisher.managers.storage;
 import com.i54m.punisher.PunisherPlugin;
 import com.i54m.punisher.exceptions.ManagerNotStartedException;
 import com.i54m.punisher.exceptions.PunishmentsStorageException;
+import com.i54m.punisher.managers.PlayerDataManager;
+import com.i54m.punisher.managers.ReputationManager;
 import com.i54m.punisher.managers.WorkerManager;
 import com.i54m.punisher.objects.Punishment;
 import com.i54m.punisher.objects.ResetType;
@@ -76,6 +78,16 @@ public class SQLManager implements StorageManager {
         }
         locked = true;
         cacheTask.cancel();
+        try {
+            if (connection != null && !connection.isClosed() || hikari.isRunning()) {
+                hikari.close();
+                connection.close();
+                connection = null;
+            }
+        } catch (Exception e) {
+            ERROR_HANDLER.log(e);
+            return;
+        }
     }
 
     private void openConnection() throws Exception {
@@ -164,7 +176,7 @@ public class SQLManager implements StorageManager {
                 "`Status` VARCHAR(10) NOT NULL , " +
                 "`Remover_UUID` VARCHAR(32) NULL DEFAULT NULL , " +
                 "`Authorizer_UUID` VARCHAR(32) NULL DEFAULT NULL , " +
-                "`MetaData` VARCHAR NULL DEFAULT NULL" +
+                "`MetaData` VARCHAR NULL DEFAULT NULL," +
                 "PRIMARY KEY (`ID`)) " +
                 "ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_general_ci;";
         String alt_list = "CREATE TABLE IF NOT EXISTS`" + database + "`.`punisher_alt_list` ( " +
@@ -767,6 +779,22 @@ public class SQLManager implements StorageManager {
     }
 
     @Override
+    public void resetAlts(@NotNull UUID uuid) throws PunishmentsStorageException {
+        if (locked) {
+            ERROR_HANDLER.log(new ManagerNotStartedException(this.getClass()));
+            return;
+        }
+        try {
+            String sqlipadd = "DELETE `punisher_alt_list` WHERE `UUID`='" + uuid + "' ;";
+            PreparedStatement stmtipadd = connection.prepareStatement(sqlipadd);
+            stmtipadd.executeUpdate();
+            stmtipadd.close();
+        } catch (Exception e) {
+            throw new PunishmentsStorageException("Resetting alts on user: " + uuid.toString(), "CONSOLE", this.getClass().getName(), e);
+        }
+    }
+
+    @Override
     public void updateIpHist(@NotNull UUID uuid, @NotNull String ip) throws PunishmentsStorageException {
         if (locked) {
             ERROR_HANDLER.log(new ManagerNotStartedException(this.getClass()));
@@ -841,18 +869,113 @@ public class SQLManager implements StorageManager {
                         continue;
                     }
                     case Bans: {
-
+                        String sqlpunishment = "SELECT * FROM `punisher_punishments` WHERE `Type`='" + Punishment.Type.BAN.toString() + "';";
+                        PreparedStatement stmtpunishment = connection.prepareStatement(sqlpunishment);
+                        final ResultSet resultspunishment = stmtpunishment.executeQuery();
+                        WORKER_MANAGER.runWorker(new WorkerManager.Worker(() -> {
+                            ArrayList<Punishment> bans = new ArrayList<>();
+                            try {
+                                while (resultspunishment.next()) {
+                                    Punishment punishment = new Punishment(
+                                            resultspunishment.getInt("ID"),
+                                            Punishment.Type.valueOf(resultspunishment.getString("Type")),
+                                            resultspunishment.getString("Reason"),
+                                            resultspunishment.getString("Issue_Date"),
+                                            resultspunishment.getLong("Expiration"),
+                                            UUID.fromString(resultspunishment.getString("Target_UUID")),
+                                            resultspunishment.getString("Target_Name"),
+                                            UUID.fromString(resultspunishment.getString("Punisher_UUID")),
+                                            resultspunishment.getString("Message"),
+                                            Punishment.Status.valueOf(resultspunishment.getString("Status")),
+                                            UUID.fromString(resultspunishment.getString("Remover_UUID")),
+                                            UUID.fromString(resultspunishment.getString("Authorizer_UUID")),
+                                            Punishment.MetaData.deserializeFromJson(resultspunishment.getString("MetaData")));
+                                    String message = punishment.getMessage();
+                                    if (message.contains("%sinquo%"))
+                                        message = message.replaceAll("%sinquo%", "'");
+                                    if (message.contains("%dubquo%"))
+                                        message = message.replaceAll("%dubquo%", "\"");
+                                    if (message.contains("%bcktck%"))
+                                        message = message.replaceAll("%bcktck%", "`");
+                                    punishment.setMessage(message);
+                                    bans.add(punishment);
+                                }
+                                resultspunishment.close();
+                                stmtpunishment.close();
+                                for (Punishment ban : bans) {
+                                    updatePunishment(ban.setMetaData(ban.getMetaData().setAppliesToHistory(false)));
+                                }
+                            } catch (SQLException | PunishmentsStorageException exception) {
+                                ERROR_HANDLER.log(exception);
+                                ERROR_HANDLER.adminChatAlert(exception, PLUGIN.getProxy().getConsole());
+                            }
+                        }));
                         success = true;
                         continue;
                     }
                     case Everything: {
-                        //drop database, reputation and playerdata reset
+                        ReputationManager.getINSTANCE().stop();
+                        PlayerDataManager.getINSTANCE().stop();
+
+                        String sql1 = "DROP DATABASE `" + database + "`;";
+                        PreparedStatement stmt1 = connection.prepareStatement(sql1);
+                        stmt1.executeUpdate();
+                        stmt1.close();
                         success = true;
+
+                        File playerDataDir = new File(PLUGIN.getDataFolder() + "/playerdata/");
+                        if (!playerDataDir.delete())
+                            success = false;
+
+                        PlayerDataManager.getINSTANCE().start();
+                        ReputationManager.getINSTANCE().start();
+                        for (ProxiedPlayer players : PLUGIN.getProxy().getPlayers()) {
+                            PlayerDataManager.getINSTANCE().loadPlayerData(players.getUniqueId());
+                        }
                         break;
                     }
                     case History: {
-                        //use a worker to set all punishments metadata appliestohistory=false;
-
+                        String sqlpunishment = "SELECT * FROM `punisher_punishments`;";
+                        PreparedStatement stmtpunishment = connection.prepareStatement(sqlpunishment);
+                        final ResultSet resultspunishment = stmtpunishment.executeQuery();
+                        WORKER_MANAGER.runWorker(new WorkerManager.Worker(() -> {
+                            ArrayList<Punishment> punishments = new ArrayList<>();
+                            try {
+                                while (resultspunishment.next()) {
+                                    Punishment punishment = new Punishment(
+                                            resultspunishment.getInt("ID"),
+                                            Punishment.Type.valueOf(resultspunishment.getString("Type")),
+                                            resultspunishment.getString("Reason"),
+                                            resultspunishment.getString("Issue_Date"),
+                                            resultspunishment.getLong("Expiration"),
+                                            UUID.fromString(resultspunishment.getString("Target_UUID")),
+                                            resultspunishment.getString("Target_Name"),
+                                            UUID.fromString(resultspunishment.getString("Punisher_UUID")),
+                                            resultspunishment.getString("Message"),
+                                            Punishment.Status.valueOf(resultspunishment.getString("Status")),
+                                            UUID.fromString(resultspunishment.getString("Remover_UUID")),
+                                            UUID.fromString(resultspunishment.getString("Authorizer_UUID")),
+                                            Punishment.MetaData.deserializeFromJson(resultspunishment.getString("MetaData")));
+                                    String message = punishment.getMessage();
+                                    if (message.contains("%sinquo%"))
+                                        message = message.replaceAll("%sinquo%", "'");
+                                    if (message.contains("%dubquo%"))
+                                        message = message.replaceAll("%dubquo%", "\"");
+                                    if (message.contains("%bcktck%"))
+                                        message = message.replaceAll("%bcktck%", "`");
+                                    punishment.setMessage(message);
+                                    punishments.add(punishment);
+                                }
+                                resultspunishment.close();
+                                stmtpunishment.close();
+                                for (Punishment punishment : punishments) {
+                                    updatePunishment(punishment.setMetaData(punishment.getMetaData().setAppliesToHistory(false)));
+                                }
+                            } catch (SQLException | PunishmentsStorageException exception) {
+                                ERROR_HANDLER.log(exception);
+                                ERROR_HANDLER.adminChatAlert(exception, PLUGIN.getProxy().getConsole());
+                            }
+                        }));
                         success = true;
                         break;
                     }
@@ -865,10 +988,92 @@ public class SQLManager implements StorageManager {
                         continue;
                     }
                     case Kicks: {
+                        String sqlpunishment = "SELECT * FROM `punisher_punishments` WHERE `Type`='" + Punishment.Type.KICK.toString() + "';";
+                        PreparedStatement stmtpunishment = connection.prepareStatement(sqlpunishment);
+                        final ResultSet resultspunishment = stmtpunishment.executeQuery();
+                        WORKER_MANAGER.runWorker(new WorkerManager.Worker(() -> {
+                            ArrayList<Punishment> kicks = new ArrayList<>();
+                            try {
+                                while (resultspunishment.next()) {
+                                    Punishment punishment = new Punishment(
+                                            resultspunishment.getInt("ID"),
+                                            Punishment.Type.valueOf(resultspunishment.getString("Type")),
+                                            resultspunishment.getString("Reason"),
+                                            resultspunishment.getString("Issue_Date"),
+                                            resultspunishment.getLong("Expiration"),
+                                            UUID.fromString(resultspunishment.getString("Target_UUID")),
+                                            resultspunishment.getString("Target_Name"),
+                                            UUID.fromString(resultspunishment.getString("Punisher_UUID")),
+                                            resultspunishment.getString("Message"),
+                                            Punishment.Status.valueOf(resultspunishment.getString("Status")),
+                                            UUID.fromString(resultspunishment.getString("Remover_UUID")),
+                                            UUID.fromString(resultspunishment.getString("Authorizer_UUID")),
+                                            Punishment.MetaData.deserializeFromJson(resultspunishment.getString("MetaData")));
+                                    String message = punishment.getMessage();
+                                    if (message.contains("%sinquo%"))
+                                        message = message.replaceAll("%sinquo%", "'");
+                                    if (message.contains("%dubquo%"))
+                                        message = message.replaceAll("%dubquo%", "\"");
+                                    if (message.contains("%bcktck%"))
+                                        message = message.replaceAll("%bcktck%", "`");
+                                    punishment.setMessage(message);
+                                    kicks.add(punishment);
+                                }
+                                resultspunishment.close();
+                                stmtpunishment.close();
+                                for (Punishment kick : kicks) {
+                                    updatePunishment(kick.setMetaData(kick.getMetaData().setAppliesToHistory(false)));
+                                }
+                            } catch (SQLException | PunishmentsStorageException exception) {
+                                ERROR_HANDLER.log(exception);
+                                ERROR_HANDLER.adminChatAlert(exception, PLUGIN.getProxy().getConsole());
+                            }
+                        }));
                         success = true;
                         continue;
                     }
                     case Mutes: {
+                        String sqlpunishment = "SELECT * FROM `punisher_punishments` WHERE `Type`='" + Punishment.Type.MUTE.toString() + "';";
+                        PreparedStatement stmtpunishment = connection.prepareStatement(sqlpunishment);
+                        final ResultSet resultspunishment = stmtpunishment.executeQuery();
+                        WORKER_MANAGER.runWorker(new WorkerManager.Worker(() -> {
+                            ArrayList<Punishment> mutes = new ArrayList<>();
+                            try {
+                                while (resultspunishment.next()) {
+                                    Punishment punishment = new Punishment(
+                                            resultspunishment.getInt("ID"),
+                                            Punishment.Type.valueOf(resultspunishment.getString("Type")),
+                                            resultspunishment.getString("Reason"),
+                                            resultspunishment.getString("Issue_Date"),
+                                            resultspunishment.getLong("Expiration"),
+                                            UUID.fromString(resultspunishment.getString("Target_UUID")),
+                                            resultspunishment.getString("Target_Name"),
+                                            UUID.fromString(resultspunishment.getString("Punisher_UUID")),
+                                            resultspunishment.getString("Message"),
+                                            Punishment.Status.valueOf(resultspunishment.getString("Status")),
+                                            UUID.fromString(resultspunishment.getString("Remover_UUID")),
+                                            UUID.fromString(resultspunishment.getString("Authorizer_UUID")),
+                                            Punishment.MetaData.deserializeFromJson(resultspunishment.getString("MetaData")));
+                                    String message = punishment.getMessage();
+                                    if (message.contains("%sinquo%"))
+                                        message = message.replaceAll("%sinquo%", "'");
+                                    if (message.contains("%dubquo%"))
+                                        message = message.replaceAll("%dubquo%", "\"");
+                                    if (message.contains("%bcktck%"))
+                                        message = message.replaceAll("%bcktck%", "`");
+                                    punishment.setMessage(message);
+                                    mutes.add(punishment);
+                                }
+                                resultspunishment.close();
+                                stmtpunishment.close();
+                                for (Punishment mute : mutes) {
+                                    updatePunishment(mute.setMetaData(mute.getMetaData().setAppliesToHistory(false)));
+                                }
+                            } catch (SQLException | PunishmentsStorageException exception) {
+                                ERROR_HANDLER.log(exception);
+                                ERROR_HANDLER.adminChatAlert(exception, PLUGIN.getProxy().getConsole());
+                            }
+                        }));
                         success = true;
                         continue;
                     }
@@ -890,8 +1095,48 @@ public class SQLManager implements StorageManager {
                         continue;
                     }
                     case Warns: {
+                        String sqlpunishment = "SELECT * FROM `punisher_punishments` WHERE `Type`='" + Punishment.Type.WARN.toString() + "';";
+                        PreparedStatement stmtpunishment = connection.prepareStatement(sqlpunishment);
+                        final ResultSet resultspunishment = stmtpunishment.executeQuery();
+                        WORKER_MANAGER.runWorker(new WorkerManager.Worker(() -> {
+                            ArrayList<Punishment> warns = new ArrayList<>();
+                            try {
+                                while (resultspunishment.next()) {
+                                    Punishment punishment = new Punishment(
+                                            resultspunishment.getInt("ID"),
+                                            Punishment.Type.valueOf(resultspunishment.getString("Type")),
+                                            resultspunishment.getString("Reason"),
+                                            resultspunishment.getString("Issue_Date"),
+                                            resultspunishment.getLong("Expiration"),
+                                            UUID.fromString(resultspunishment.getString("Target_UUID")),
+                                            resultspunishment.getString("Target_Name"),
+                                            UUID.fromString(resultspunishment.getString("Punisher_UUID")),
+                                            resultspunishment.getString("Message"),
+                                            Punishment.Status.valueOf(resultspunishment.getString("Status")),
+                                            UUID.fromString(resultspunishment.getString("Remover_UUID")),
+                                            UUID.fromString(resultspunishment.getString("Authorizer_UUID")),
+                                            Punishment.MetaData.deserializeFromJson(resultspunishment.getString("MetaData")));
+                                    String message = punishment.getMessage();
+                                    if (message.contains("%sinquo%"))
+                                        message = message.replaceAll("%sinquo%", "'");
+                                    if (message.contains("%dubquo%"))
+                                        message = message.replaceAll("%dubquo%", "\"");
+                                    if (message.contains("%bcktck%"))
+                                        message = message.replaceAll("%bcktck%", "`");
+                                    punishment.setMessage(message);
+                                    warns.add(punishment);
+                                }
+                                resultspunishment.close();
+                                stmtpunishment.close();
+                                for (Punishment warn : warns) {
+                                    updatePunishment(warn.setMetaData(warn.getMetaData().setAppliesToHistory(false)));
+                                }
+                            } catch (SQLException | PunishmentsStorageException exception) {
+                                ERROR_HANDLER.log(exception);
+                                ERROR_HANDLER.adminChatAlert(exception, PLUGIN.getProxy().getConsole());
+                            }
+                        }));
                         success = true;
-                        continue;
                     }
                 }
             } catch (Exception e) {

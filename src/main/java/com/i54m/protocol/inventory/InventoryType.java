@@ -69,7 +69,8 @@ public enum InventoryType {
         return getChestInventoryWithRows(rows);
     }
 
-    public static InventoryType getChestInventoryWithRows(final int rows) {
+    public static InventoryType getChestInventoryWithRows(int rows) {
+        if (rows ==0) rows = 1;
         return valueOf("GENERIC_9X" + rows);
     }
 

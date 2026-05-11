@@ -146,6 +146,7 @@ public class FlatFileManager implements StorageManager {
             ERROR_HANDLER.log(new ManagerNotStartedException(this.getClass()));
             return;
         }
+        if (lastPunishmentId <= 0) return;
         try {
             for (ProxiedPlayer player : PLUGIN.getProxy().getPlayers()) {
                 loadUser(player.getUniqueId(), false);
@@ -637,6 +638,29 @@ public class FlatFileManager implements StorageManager {
             }
         } catch (Exception e) {
             throw new PunishmentsStorageException("Updating alts on user: " + uuid.toString(), "CONSOLE", this.getClass().getName(), e);
+        }
+    }
+
+    @Override
+    public void resetAlts(@NotNull UUID uuid) throws PunishmentsStorageException {
+        if (locked) {
+            ERROR_HANDLER.log(new ManagerNotStartedException(this.getClass()));
+            return;
+        }
+        try {
+            File file = new File(altsDir, uuid.toString() + ".yml");
+            if (!file.exists()) return;
+            Configuration config = yamlProvider.load(file);
+            String ip = config.getString("ip");
+            File ipfile = new File(altsDir, ip + ".yml");
+            if (!ipfile.exists()) return;
+            Configuration ipconfig = yamlProvider.load(file);
+            ArrayList<String> alts = new ArrayList<>(config.getStringList("alts"));
+            alts.remove(uuid.toString());
+            ipconfig.set("alts", alts);
+            file.delete();
+        } catch (Exception e) {
+            throw new PunishmentsStorageException("Resetting alts on user: " + uuid.toString(), "CONSOLE", this.getClass().getName(), e);
         }
     }
 
